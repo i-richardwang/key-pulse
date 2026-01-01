@@ -34,28 +34,28 @@ export function ResultPanel({
           <TabsList className="w-full justify-start">
             <TabsTrigger value="all" className="gap-1.5">
               <ListIcon className="size-3" />
-              全部
+              All
               <Badge variant="secondary" className="ml-1 h-4 px-1">
                 {results.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="valid" className="gap-1.5">
               <CheckCircleIcon className="size-3 text-green-600" />
-              有效
+              Valid
               <Badge variant="secondary" className="ml-1 h-4 px-1">
                 {validKeys.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="invalid" className="gap-1.5">
               <XCircleIcon className="size-3 text-red-600" />
-              无效
+              Invalid
               <Badge variant="secondary" className="ml-1 h-4 px-1">
                 {invalidKeys.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="problem" className="gap-1.5">
               <AlertTriangleIcon className="size-3 text-amber-600" />
-              问题
+              Problem
               <Badge variant="secondary" className="ml-1 h-4 px-1">
                 {problemKeys.length}
               </Badge>
@@ -65,16 +65,16 @@ export function ResultPanel({
 
         <div className="flex-1 min-h-0 p-4">
           <TabsContent value="all" className="h-full mt-0">
-            <ResultList results={results} emptyMessage="暂无验证结果" />
+            <ResultList results={results} emptyMessage="No validation results yet" />
           </TabsContent>
           <TabsContent value="valid" className="h-full mt-0">
-            <ResultList results={validKeys} emptyMessage="暂无有效 Key" />
+            <ResultList results={validKeys} emptyMessage="No valid keys" />
           </TabsContent>
           <TabsContent value="invalid" className="h-full mt-0">
-            <ResultList results={invalidKeys} emptyMessage="暂无无效 Key" />
+            <ResultList results={invalidKeys} emptyMessage="No invalid keys" />
           </TabsContent>
           <TabsContent value="problem" className="h-full mt-0">
-            <ResultList results={problemKeys} emptyMessage="暂无问题 Key (限流/超时/错误)" />
+            <ResultList results={problemKeys} emptyMessage="No problem keys (rate limited/timeout/error)" />
           </TabsContent>
         </div>
       </Tabs>

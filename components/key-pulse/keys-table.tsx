@@ -45,7 +45,7 @@ interface KeysTableProps {
 function formatDate(date: Date | string | null): string {
   if (!date) return '-';
   const d = new Date(date);
-  return d.toLocaleString('zh-CN', {
+  return d.toLocaleString('en-US', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -100,9 +100,9 @@ export function KeysTable({
               <TableHead className="min-w-[180px]">Key</TableHead>
               <TableHead className="min-w-[150px]">Provider</TableHead>
               <TableHead className="min-w-[100px]">Proxy</TableHead>
-              <TableHead className="w-[100px]">状态</TableHead>
-              <TableHead className="w-[120px]">验证时间</TableHead>
-              <TableHead className="w-[80px]">耗时</TableHead>
+              <TableHead className="w-[100px]">Status</TableHead>
+              <TableHead className="w-[120px]">Validated At</TableHead>
+              <TableHead className="w-[80px]">Time</TableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -110,13 +110,13 @@ export function KeysTable({
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  加载中...
+                  Loading...
                 </TableCell>
               </TableRow>
             ) : keys.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  暂无数据，点击"添加"按钮添加 API Key
+                  No data yet. Click &quot;Add&quot; to add API Keys.
                 </TableCell>
               </TableRow>
             ) : (
@@ -164,24 +164,24 @@ export function KeysTable({
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontalIcon />
-                            <span className="sr-only">操作菜单</span>
+                            <span className="sr-only">Actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onValidate([key.id])}>
                             <PlayIcon />
-                            验证
+                            Validate
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onEdit(key)}>
                             <PencilIcon />
-                            编辑
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() => onDelete([key.id])}
                           >
                             <TrashIcon />
-                            删除
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -197,8 +197,8 @@ export function KeysTable({
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          共 {total} 条记录
-          {selectedIds.length > 0 && ` · 已选 ${selectedIds.length} 条`}
+          {total} records
+          {selectedIds.length > 0 && ` · ${selectedIds.length} selected`}
         </span>
         <div className="flex items-center gap-2">
           <Button
@@ -208,7 +208,7 @@ export function KeysTable({
             disabled={page <= 1}
           >
             <ChevronLeftIcon />
-            <span className="sr-only">上一页</span>
+            <span className="sr-only">Previous page</span>
           </Button>
           <span className="text-muted-foreground min-w-[60px] text-center">
             {page} / {totalPages || 1}
@@ -220,7 +220,7 @@ export function KeysTable({
             disabled={page >= totalPages}
           >
             <ChevronRightIcon />
-            <span className="sr-only">下一页</span>
+            <span className="sr-only">Next page</span>
           </Button>
         </div>
       </div>

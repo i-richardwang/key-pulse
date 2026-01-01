@@ -1,78 +1,78 @@
-# KeyPulse UI 设计规范
+# KeyPulse UI Design Guidelines
 
-本文档基于 shadcn/ui 官方设计模式，规范项目中 UI 组件的使用方式。
+This document is based on shadcn/ui official design patterns, standardizing UI component usage in the project.
 
 ---
 
-## 1. Button 组件
+## 1. Button Component
 
-### 1.1 带文字的按钮
+### 1.1 Buttons with Text
 
-图标放在文字前面时，使用 `data-icon="inline-start"` 属性：
+When placing an icon before text, use the `data-icon="inline-start"` attribute:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <Button>
   <PlusIcon data-icon="inline-start" />
-  添加
+  Add
 </Button>
 
-// ❌ 错误 - 不要手动设置图标 className
+// ❌ Incorrect - don't manually set icon className
 <Button>
   <PlusIcon className="size-4 mr-1" />
-  添加
+  Add
 </Button>
 ```
 
-### 1.2 纯图标按钮
+### 1.2 Icon-only Buttons
 
-使用 `size="icon"` 并添加 `sr-only` 无障碍标签：
+Use `size="icon"` and add an `sr-only` accessibility label:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <Button variant="outline" size="icon">
   <DownloadIcon />
-  <span className="sr-only">导出</span>
+  <span className="sr-only">Export</span>
 </Button>
 
-// ❌ 错误 - 不要用 className 覆盖尺寸
+// ❌ Incorrect - don't use className to override size
 <Button variant="outline" size="icon" className="size-8">
   <DownloadIcon />
 </Button>
 ```
 
-### 1.3 Button 尺寸规范
+### 1.3 Button Size Reference
 
-| size | 高度 | 使用场景 |
-|------|------|----------|
-| `default` | h-7 (28px) | 默认按钮，与 Input/Select 高度一致 |
-| `sm` | h-6 (24px) | 紧凑场景 |
-| `lg` | h-8 (32px) | 强调场景 |
-| `icon` | size-7 (28px) | 纯图标按钮 |
-| `icon-sm` | size-6 (24px) | 小型图标按钮 |
+| size | Height | Use Case |
+|------|--------|----------|
+| `default` | h-7 (28px) | Default button, same height as Input/Select |
+| `sm` | h-6 (24px) | Compact scenarios |
+| `lg` | h-8 (32px) | Emphasized scenarios |
+| `icon` | size-7 (28px) | Icon-only buttons |
+| `icon-sm` | size-6 (24px) | Small icon buttons |
 
 ---
 
-## 2. 表单结构
+## 2. Form Structure
 
-### 2.1 基本结构
+### 2.1 Basic Structure
 
-使用 `Field` + `FieldGroup` + `FieldLabel` 组织表单：
+Use `Field` + `FieldGroup` + `FieldLabel` to organize forms:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <form onSubmit={handleSubmit}>
   <FieldGroup>
     <Field>
-      <FieldLabel htmlFor="name">姓名</FieldLabel>
-      <Input id="name" placeholder="请输入姓名" />
+      <FieldLabel htmlFor="name">Name</FieldLabel>
+      <Input id="name" placeholder="Enter name" />
     </Field>
 
     <Field>
-      <FieldLabel htmlFor="role">角色</FieldLabel>
+      <FieldLabel htmlFor="role">Role</FieldLabel>
       <Select>
         <SelectTrigger id="role">
-          <SelectValue placeholder="选择角色" />
+          <SelectValue placeholder="Select role" />
         </SelectTrigger>
         <SelectContent>...</SelectContent>
       </Select>
@@ -80,33 +80,33 @@
   </FieldGroup>
 </form>
 
-// ❌ 错误 - 不要用 div + Label 替代
+// ❌ Incorrect - don't use div + Label instead
 <div className="space-y-4">
   <div className="space-y-2">
-    <Label>姓名</Label>
-    <Input placeholder="请输入姓名" />
+    <Label>Name</Label>
+    <Input placeholder="Enter name" />
   </div>
 </div>
 ```
 
-### 2.2 htmlFor/id 关联规范
+### 2.2 htmlFor/id Association Rules
 
-**必须关联的情况：**
+**Required associations:**
 - Input + FieldLabel
 - Textarea + FieldLabel
-- Select (通过 SelectTrigger) + FieldLabel
-- Checkbox + FieldLabel（当 label 在 checkbox 后面时）
+- Select (via SelectTrigger) + FieldLabel
+- Checkbox + FieldLabel (when label is after checkbox)
 
 ```tsx
-// ✅ 正确 - Input
+// ✅ Correct - Input
 <Field>
-  <FieldLabel htmlFor="email">邮箱</FieldLabel>
+  <FieldLabel htmlFor="email">Email</FieldLabel>
   <Input id="email" type="email" />
 </Field>
 
-// ✅ 正确 - Select
+// ✅ Correct - Select
 <Field>
-  <FieldLabel htmlFor="status">状态</FieldLabel>
+  <FieldLabel htmlFor="status">Status</FieldLabel>
   <Select>
     <SelectTrigger id="status">
       <SelectValue />
@@ -115,25 +115,25 @@
   </Select>
 </Field>
 
-// ✅ 正确 - Checkbox
+// ✅ Correct - Checkbox
 <Field orientation="horizontal">
   <Checkbox id="agree" />
-  <FieldLabel htmlFor="agree">同意条款</FieldLabel>
+  <FieldLabel htmlFor="agree">Agree to terms</FieldLabel>
 </Field>
 ```
 
-**不需要关联的情况：**
-- Switch + FieldLabel（Switch 在前，label 在后）
-- 只读显示内容
+**No association needed:**
+- Switch + FieldLabel (Switch first, label after)
+- Read-only display content
 
 ```tsx
-// ✅ 正确 - Switch 不需要 htmlFor
+// ✅ Correct - Switch doesn't need htmlFor
 <Field orientation="horizontal">
   <Switch checked={enabled} onCheckedChange={setEnabled} />
-  <FieldLabel>启用功能</FieldLabel>
+  <FieldLabel>Enable feature</FieldLabel>
 </Field>
 
-// ✅ 正确 - 只读显示
+// ✅ Correct - Read-only display
 <Field>
   <FieldLabel>API Key</FieldLabel>
   <div className="text-sm font-mono bg-muted px-3 py-2 rounded-md">
@@ -142,186 +142,186 @@
 </Field>
 ```
 
-### 2.3 Field 布局方向
+### 2.3 Field Layout Direction
 
 ```tsx
-// 垂直布局（默认）
+// Vertical layout (default)
 <Field>
-  <FieldLabel>标签</FieldLabel>
+  <FieldLabel>Label</FieldLabel>
   <Input />
 </Field>
 
-// 水平布局 - 用于 Switch/Checkbox
+// Horizontal layout - for Switch/Checkbox
 <Field orientation="horizontal">
   <Switch />
-  <FieldLabel>标签</FieldLabel>
+  <FieldLabel>Label</FieldLabel>
 </Field>
 ```
 
 ---
 
-## 3. DropdownMenu 组件
+## 3. DropdownMenu Component
 
-### 3.1 图标放置
+### 3.1 Icon Placement
 
-图标直接放在 DropdownMenuItem 内部，不需要 `data-icon` 属性：
+Icons go directly inside DropdownMenuItem, no `data-icon` attribute needed:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <DropdownMenuItem>
   <PencilIcon />
-  编辑
+  Edit
 </DropdownMenuItem>
 
-// ❌ 错误
+// ❌ Incorrect
 <DropdownMenuItem>
   <PencilIcon data-icon="inline-start" />
-  编辑
+  Edit
 </DropdownMenuItem>
 ```
 
-### 3.2 危险操作
+### 3.2 Destructive Actions
 
-使用 `variant="destructive"` 而非自定义 className：
+Use `variant="destructive"` instead of custom className:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <DropdownMenuItem variant="destructive">
   <TrashIcon />
-  删除
+  Delete
 </DropdownMenuItem>
 
-// ❌ 错误
+// ❌ Incorrect
 <DropdownMenuItem className="text-destructive">
   <TrashIcon />
-  删除
+  Delete
 </DropdownMenuItem>
 ```
 
 ---
 
-## 4. Dialog 组件
+## 4. Dialog Component
 
-### 4.1 Dialog 结构
+### 4.1 Dialog Structure
 
 ```tsx
 <Dialog open={open} onOpenChange={onOpenChange}>
   <DialogContent className="sm:max-w-md">
     <DialogHeader>
-      <DialogTitle>标题</DialogTitle>
-      <DialogDescription>描述文字</DialogDescription>
+      <DialogTitle>Title</DialogTitle>
+      <DialogDescription>Description text</DialogDescription>
     </DialogHeader>
 
     <form onSubmit={handleSubmit}>
       <FieldGroup>
-        {/* 表单内容 */}
+        {/* Form content */}
       </FieldGroup>
 
       <DialogFooter className="mt-6">
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          取消
+          Cancel
         </Button>
-        <Button type="submit">确认</Button>
+        <Button type="submit">Confirm</Button>
       </DialogFooter>
     </form>
   </DialogContent>
 </Dialog>
 ```
 
-### 4.2 DialogFooter 间距
+### 4.2 DialogFooter Spacing
 
-DialogFooter 默认有 `gap-2` 间距，**不要覆盖**：
+DialogFooter has default `gap-2` spacing, **do not override**:
 
 ```tsx
-// ✅ 正确 - 只添加 margin-top
+// ✅ Correct - only add margin-top
 <DialogFooter className="mt-6">
 
-// ❌ 错误 - 不要覆盖 gap
+// ❌ Incorrect - don't override gap
 <DialogFooter className="mt-6 gap-0">
 <DialogFooter className="mt-6 sm:gap-0">
 ```
 
 ---
 
-## 5. AlertDialog 组件
+## 5. AlertDialog Component
 
-### 5.1 使用内置 variant
+### 5.1 Use Built-in Variant
 
-AlertDialogAction 支持 `variant` prop，不要用 className 覆盖：
+AlertDialogAction supports `variant` prop, don't use className to override:
 
 ```tsx
-// ✅ 正确
+// ✅ Correct
 <AlertDialogAction variant="destructive">
-  删除
+  Delete
 </AlertDialogAction>
 
-// ❌ 错误
+// ❌ Incorrect
 <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-  删除
+  Delete
 </AlertDialogAction>
 ```
 
 ---
 
-## 6. 避免覆盖默认样式
+## 6. Avoid Overriding Default Styles
 
-### 6.1 组件已有默认值
+### 6.1 Components Have Default Values
 
-| 组件 | 默认样式 | 不要重复设置 |
-|------|----------|-------------|
-| Table | `text-xs` | TableCell 不需要再加 `text-xs` |
-| Badge | `text-[0.625rem]` | 不需要加 `text-xs` 或 `text-[10px]` |
-| Textarea | `resize-none` | 不需要再加 `resize-none` |
-| DialogFooter | `gap-2` | 不需要再加 `gap-2` |
-| Button (default) | `h-7` | 不需要额外设置高度 |
+| Component | Default Style | Don't Repeat |
+|-----------|--------------|--------------|
+| Table | `text-xs` | TableCell doesn't need `text-xs` |
+| Badge | `text-[0.625rem]` | Don't add `text-xs` or `text-[10px]` |
+| Textarea | `resize-none` | Don't add `resize-none` |
+| DialogFooter | `gap-2` | Don't add `gap-2` |
+| Button (default) | `h-7` | Don't set height explicitly |
 
-### 6.2 使用组件 prop 而非 className
+### 6.2 Use Component Props Instead of className
 
-当组件提供了 prop 支持时，优先使用 prop：
+When components provide prop support, prefer using props:
 
 ```tsx
-// ✅ 正确 - 使用 variant prop
-<Button variant="destructive">删除</Button>
-<AlertDialogAction variant="destructive">确认</AlertDialogAction>
-<DropdownMenuItem variant="destructive">删除</DropdownMenuItem>
+// ✅ Correct - use variant prop
+<Button variant="destructive">Delete</Button>
+<AlertDialogAction variant="destructive">Confirm</AlertDialogAction>
+<DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
 
-// ❌ 错误 - 用 className 覆盖
-<Button className="bg-destructive">删除</Button>
+// ❌ Incorrect - using className to override
+<Button className="bg-destructive">Delete</Button>
 ```
 
-### 6.3 继承父组件样式
+### 6.3 Inheriting Parent Component Styles
 
-子组件会继承父组件的样式，不需要重复设置：
+Child components inherit parent styles, no need to repeat:
 
 ```tsx
-// Table 已设置 text-xs，子组件继承
+// Table has text-xs, child components inherit
 
-// ✅ 正确
+// ✅ Correct
 <TableCell>{data}</TableCell>
 <TableCell className="text-muted-foreground">{date}</TableCell>
 
-// ❌ 错误 - 重复设置 text-xs
+// ❌ Incorrect - repeating text-xs
 <TableCell className="text-xs">{data}</TableCell>
 <TableCell className="text-xs text-muted-foreground">{date}</TableCell>
 ```
 
 ---
 
-## 7. 组件高度一致性
+## 7. Component Height Consistency
 
-工具栏中的交互组件应保持一致的高度：
+Interactive components in toolbars should maintain consistent height:
 
-| 组件 | 默认高度 |
-|------|----------|
+| Component | Default Height |
+|-----------|---------------|
 | Button (default) | h-7 (28px) |
 | Input | h-7 (28px) |
 | SelectTrigger | h-7 (28px) |
 | Button (icon) | size-7 (28px) |
 
 ```tsx
-// ✅ 正确 - 所有组件高度一致
+// ✅ Correct - all components have consistent height
 <div className="flex items-center gap-2">
-  <Button>添加</Button>
+  <Button>Add</Button>
   <Select>
     <SelectTrigger className="w-[120px]">
       <SelectValue />
@@ -333,47 +333,47 @@ AlertDialogAction 支持 `variant` prop，不要用 className 覆盖：
   </Button>
 </div>
 
-// ❌ 错误 - 高度不一致
+// ❌ Incorrect - inconsistent heights
 <div className="flex items-center gap-2">
-  <Button size="sm">添加</Button>  {/* h-6 */}
-  <Select>...</Select>              {/* h-7 */}
+  <Button size="sm">Add</Button>  {/* h-6 */}
+  <Select>...</Select>            {/* h-7 */}
 </div>
 ```
 
 ---
 
-## 8. 无障碍 (Accessibility)
+## 8. Accessibility
 
-### 8.1 图标按钮必须有 sr-only 标签
+### 8.1 Icon Buttons Must Have sr-only Labels
 
 ```tsx
 <Button size="icon" variant="outline">
   <SettingsIcon />
-  <span className="sr-only">设置</span>
+  <span className="sr-only">Settings</span>
 </Button>
 ```
 
-### 8.2 表单元素必须关联 label
+### 8.2 Form Elements Must Be Associated with Labels
 
-通过 htmlFor/id 关联，确保屏幕阅读器可以正确朗读：
+Associate via htmlFor/id to ensure screen readers can correctly announce:
 
 ```tsx
-<FieldLabel htmlFor="username">用户名</FieldLabel>
+<FieldLabel htmlFor="username">Username</FieldLabel>
 <Input id="username" />
 ```
 
 ---
 
-## 9. 快速检查清单
+## 9. Quick Checklist
 
-在提交代码前，检查以下项目：
+Before submitting code, check the following:
 
-- [ ] Button 带图标使用 `data-icon="inline-start"`
-- [ ] 图标按钮使用 `size="icon"` + `sr-only`
-- [ ] 表单使用 `Field` + `FieldGroup` + `FieldLabel`
-- [ ] Input/Select/Textarea 有对应的 id
-- [ ] FieldLabel 有对应的 htmlFor（除 Switch 外）
-- [ ] 没有用 className 覆盖组件的 variant/size 等 prop
-- [ ] 没有重复设置组件默认值（如 text-xs, resize-none）
-- [ ] DialogFooter 没有覆盖默认 gap-2
-- [ ] 危险操作使用 `variant="destructive"`
+- [ ] Buttons with icons use `data-icon="inline-start"`
+- [ ] Icon buttons use `size="icon"` + `sr-only`
+- [ ] Forms use `Field` + `FieldGroup` + `FieldLabel`
+- [ ] Input/Select/Textarea have corresponding id
+- [ ] FieldLabel has corresponding htmlFor (except Switch)
+- [ ] Not using className to override component variant/size props
+- [ ] Not repeating component defaults (like text-xs, resize-none)
+- [ ] DialogFooter doesn't override default gap-2
+- [ ] Destructive actions use `variant="destructive"`

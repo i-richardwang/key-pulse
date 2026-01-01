@@ -91,7 +91,7 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑 Key' : '添加 Key'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Key' : 'Add Key'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
@@ -127,7 +127,7 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
                 disabled={isFormLoading || providers.length === 0}
               >
                 <SelectTrigger id="provider">
-                  <SelectValue placeholder={providers.length === 0 ? '请先添加 Provider' : '选择 Provider'} />
+                  <SelectValue placeholder={providers.length === 0 ? 'Add a Provider first' : 'Select Provider'} />
                 </SelectTrigger>
                 <SelectContent>
                   {providers.map((p) => (
@@ -153,17 +153,17 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
 
             {/* Proxy */}
             <Field>
-              <FieldLabel htmlFor="proxy">Proxy (可选)</FieldLabel>
+              <FieldLabel htmlFor="proxy">Proxy (optional)</FieldLabel>
               <Select
                 value={proxyId}
                 onValueChange={setProxyId}
                 disabled={isFormLoading}
               >
                 <SelectTrigger id="proxy">
-                  <SelectValue placeholder="选择 Proxy" />
+                  <SelectValue placeholder="Select Proxy" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">不使用代理</SelectItem>
+                  <SelectItem value="none">No Proxy</SelectItem>
                   {proxies.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} ({p.host}:{p.port})
@@ -176,9 +176,9 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
             {/* Proxy Details */}
             {selectedProxy && (
               <div className="rounded-md bg-muted px-3 py-2 text-sm">
-                <span className="text-muted-foreground">类型: </span>
+                <span className="text-muted-foreground">Type: </span>
                 <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
-                <span className="text-muted-foreground ml-3">地址: </span>
+                <span className="text-muted-foreground ml-3">Address: </span>
                 <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
               </div>
             )}
@@ -186,13 +186,13 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || (!isEditing && !key) || !providerId || providers.length === 0}
             >
-              {isLoading ? '保存中...' : '保存'}
+              {isLoading ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

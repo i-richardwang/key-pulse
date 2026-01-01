@@ -9,8 +9,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KeyPulse - API Key 批量验证工具",
-  description: "批量验证和管理您的 API Keys",
+  title: "KeyPulse - API Key Validation Tool",
+  description: "Batch validate and manage your API Keys",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={jetbrainsMono.variable}>
+    <html lang="en" className={jetbrainsMono.variable}>
       <body className="font-mono antialiased">
         {children}
         <Toaster richColors position="top-center" />

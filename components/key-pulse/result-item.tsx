@@ -57,7 +57,7 @@ export function ResultItem({ result, index }: ResultItemProps) {
             variant="ghost"
             size="icon-sm"
             onClick={handleCopy}
-            title="复制完整 Key"
+            title="Copy full key"
           >
             {copied ? (
               <CheckIcon className="text-green-600" />
@@ -93,18 +93,18 @@ export function ResultItem({ result, index }: ResultItemProps) {
         <div className="pl-11 space-y-2">
           <div className="text-xs space-y-1">
             <p>
-              <span className="text-muted-foreground">时间:</span>{' '}
+              <span className="text-muted-foreground">Time:</span>{' '}
               {formatTimestamp(result.timestamp)}
             </p>
             {result.errorCode && (
               <p>
-                <span className="text-muted-foreground">错误码:</span>{' '}
+                <span className="text-muted-foreground">Error Code:</span>{' '}
                 {result.errorCode}
               </p>
             )}
             {result.errorMessage && (
               <p>
-                <span className="text-muted-foreground">错误信息:</span>{' '}
+                <span className="text-muted-foreground">Error Message:</span>{' '}
                 {result.errorMessage}
               </p>
             )}

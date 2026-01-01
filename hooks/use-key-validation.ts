@@ -11,20 +11,15 @@ import type {
 import { generateId } from '@/lib/key-utils';
 
 interface UseKeyValidationReturn {
-  // 状态
   isRunning: boolean;
   progress: number;
   total: number;
   results: ValidationResult[];
   summary: ValidationSummary | null;
   logs: LogEntry[];
-
-  // 操作
   startValidation: (keys: string[], config: ValidationConfig) => Promise<void>;
   stopValidation: () => void;
   clearResults: () => void;
-
-  // 过滤后的结果
   validKeys: ValidationResult[];
   invalidKeys: ValidationResult[];
   rateLimitedKeys: ValidationResult[];
@@ -42,7 +37,6 @@ export function useKeyValidation(): UseKeyValidationReturn {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // 添加日志
   const addLog = useCallback((level: LogEntry['level'], message: string) => {
     setLogs((prev) => [
       ...prev,
@@ -55,12 +49,10 @@ export function useKeyValidation(): UseKeyValidationReturn {
     ]);
   }, []);
 
-  // 开始验证
   const startValidation = useCallback(
     async (keys: string[], config: ValidationConfig) => {
       if (isRunning) return;
 
-      // 重置状态
       setIsRunning(true);
       setProgress(0);
       setTotal(keys.length);
@@ -68,7 +60,6 @@ export function useKeyValidation(): UseKeyValidationReturn {
       setSummary(null);
       setLogs([]);
 
-      // 创建新的 AbortController
       abortControllerRef.current = new AbortController();
 
       try {
@@ -100,7 +91,6 @@ export function useKeyValidation(): UseKeyValidationReturn {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // 解析 SSE 事件
           const lines = buffer.split('\n\n');
           buffer = lines.pop() || '';
 
@@ -116,7 +106,6 @@ export function useKeyValidation(): UseKeyValidationReturn {
 
                   case 'progress':
                     setResults((prev) => {
-                      // 按 index 插入或更新结果
                       const newResults = [...prev];
                       newResults[event.index] = event.result;
                       return newResults.filter(Boolean);
@@ -145,17 +134,17 @@ export function useKeyValidation(): UseKeyValidationReturn {
                     break;
                 }
               } catch {
-                // 忽略解析错误
+                // Ignore parse errors
               }
             }
           }
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          addLog('warn', '验证已取消');
+          addLog('warn', 'Validation cancelled');
         } else {
           const message = error instanceof Error ? error.message : 'Unknown error';
-          addLog('error', `验证失败: ${message}`);
+          addLog('error', `Validation failed: ${message}`);
         }
       } finally {
         setIsRunning(false);
@@ -165,14 +154,12 @@ export function useKeyValidation(): UseKeyValidationReturn {
     [isRunning, addLog]
   );
 
-  // 停止验证
   const stopValidation = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
   }, []);
 
-  // 清空结果
   const clearResults = useCallback(() => {
     setResults([]);
     setSummary(null);
@@ -181,7 +168,6 @@ export function useKeyValidation(): UseKeyValidationReturn {
     setTotal(0);
   }, []);
 
-  // 过滤结果
   const validKeys = results.filter((r) => r.status === 'valid');
   const invalidKeys = results.filter((r) => r.status === 'invalid');
   const rateLimitedKeys = results.filter((r) => r.status === 'rate_limited');

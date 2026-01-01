@@ -94,9 +94,9 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>批量添加 Keys</DialogTitle>
+          <DialogTitle>Batch Add Keys</DialogTitle>
           <DialogDescription>
-            每行一个 Key，支持逗号分隔。以 # 或 // 开头的行会被忽略。
+            One key per line, comma separated also supported. Lines starting with # or // will be ignored.
           </DialogDescription>
         </DialogHeader>
 
@@ -107,8 +107,8 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
                 <FieldLabel htmlFor="keys">API Keys</FieldLabel>
                 {uniqueKeys.length > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    {uniqueKeys.length} 个有效 Key
-                    {parsedKeys.length !== uniqueKeys.length && ` (${parsedKeys.length - uniqueKeys.length} 个重复)`}
+                    {uniqueKeys.length} valid keys
+                    {parsedKeys.length !== uniqueKeys.length && ` (${parsedKeys.length - uniqueKeys.length} duplicates)`}
                   </span>
                 )}
               </div>
@@ -131,7 +131,7 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
                 disabled={isFormLoading || providers.length === 0}
               >
                 <SelectTrigger id="batch-provider">
-                  <SelectValue placeholder={providers.length === 0 ? '请先添加 Provider' : '选择 Provider'} />
+                  <SelectValue placeholder={providers.length === 0 ? 'Add a Provider first' : 'Select Provider'} />
                 </SelectTrigger>
                 <SelectContent>
                   {providers.map((p) => (
@@ -157,17 +157,17 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
 
             {/* Proxy */}
             <Field>
-              <FieldLabel htmlFor="batch-proxy">Proxy (可选)</FieldLabel>
+              <FieldLabel htmlFor="batch-proxy">Proxy (optional)</FieldLabel>
               <Select
                 value={proxyId}
                 onValueChange={setProxyId}
                 disabled={isFormLoading}
               >
                 <SelectTrigger id="batch-proxy">
-                  <SelectValue placeholder="选择 Proxy" />
+                  <SelectValue placeholder="Select Proxy" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">不使用代理</SelectItem>
+                  <SelectItem value="none">No Proxy</SelectItem>
                   {proxies.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} ({p.host}:{p.port})
@@ -180,9 +180,9 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
             {/* Proxy Details */}
             {selectedProxy && (
               <div className="rounded-md bg-muted px-3 py-2 text-sm">
-                <span className="text-muted-foreground">类型: </span>
+                <span className="text-muted-foreground">Type: </span>
                 <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
-                <span className="text-muted-foreground ml-3">地址: </span>
+                <span className="text-muted-foreground ml-3">Address: </span>
                 <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
               </div>
             )}
@@ -190,13 +190,13 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || uniqueKeys.length === 0 || !providerId || providers.length === 0}
             >
-              {isLoading ? '添加中...' : `添加 ${uniqueKeys.length} 个 Key`}
+              {isLoading ? 'Adding...' : `Add ${uniqueKeys.length} Keys`}
             </Button>
           </DialogFooter>
         </form>

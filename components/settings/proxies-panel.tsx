@@ -57,10 +57,10 @@ export function ProxiesPanel() {
 
     try {
       await deleteProxies([deleteTarget.id]);
-      toast.success('Proxy 已删除');
+      toast.success('Proxy deleted');
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '删除失败');
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
@@ -76,7 +76,7 @@ export function ProxiesPanel() {
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleAdd}>
             <PlusIcon data-icon="inline-start" />
-            添加
+            Add
           </Button>
         </div>
 
@@ -85,12 +85,12 @@ export function ProxiesPanel() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>名称</TableHead>
-                <TableHead>类型</TableHead>
-                <TableHead>地址</TableHead>
-                <TableHead className="text-center">认证</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead className="text-center">Auth</TableHead>
                 <TableHead className="text-center">Keys</TableHead>
-                <TableHead className="text-center">默认</TableHead>
+                <TableHead className="text-center">Default</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -98,13 +98,13 @@ export function ProxiesPanel() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    加载中...
+                    Loading...
                   </TableCell>
                 </TableRow>
               ) : proxies.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    暂无 Proxy，点击"添加"按钮添加
+                    No proxies yet. Click &quot;Add&quot; to create one.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -142,13 +142,13 @@ export function ProxiesPanel() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontalIcon />
-                            <span className="sr-only">操作</span>
+                            <span className="sr-only">Actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(proxy)}>
                             <PencilIcon />
-                            编辑
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
@@ -156,7 +156,7 @@ export function ProxiesPanel() {
                             disabled={proxy.keyCount > 0}
                           >
                             <TrashIcon />
-                            删除
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -181,9 +181,9 @@ export function ProxiesPanel() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="删除 Proxy"
-        description={`确定要删除 "${deleteTarget?.name}" 吗？此操作不可恢复。`}
-        confirmText="删除"
+        title="Delete Proxy"
+        description={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />

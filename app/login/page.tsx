@@ -30,10 +30,10 @@ export default function LoginPage() {
         router.refresh();
       } else {
         const data = await res.json();
-        setError(data.error || '密码错误');
+        setError(data.error || 'Incorrect password');
       }
     } catch {
-      setError('登录失败，请重试');
+      setError('Login failed, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -47,16 +47,16 @@ export default function LoginPage() {
             <KeyRoundIcon className="size-10 text-primary" />
           </div>
           <h1 className="text-xl font-semibold">KeyPulse</h1>
-          <p className="text-sm text-muted-foreground">API Key 批量验证工具</p>
+          <p className="text-sm text-muted-foreground">API Key Validation Tool</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field data-invalid={!!error}>
-            <FieldLabel htmlFor="password">访问密码</FieldLabel>
+            <FieldLabel htmlFor="password">Access Password</FieldLabel>
             <Input
               id="password"
               type="password"
-              placeholder="请输入访问密码"
+              placeholder="Enter access password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
@@ -67,7 +67,7 @@ export default function LoginPage() {
 
           <Button type="submit" className="w-full" disabled={isLoading || !password}>
             <LogInIcon data-icon="inline-start" />
-            {isLoading ? '登录中...' : '登录'}
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
       </div>

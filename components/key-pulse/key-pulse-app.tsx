@@ -95,10 +95,10 @@ export function KeyPulseApp() {
           providerId: data.providerId,
           proxyId: data.proxyId,
         }]);
-        toast.success('添加成功');
+        toast.success('Added successfully');
         refetch();
       } catch (error) {
-        toast.error('添加失败', { description: error instanceof Error ? error.message : '未知错误' });
+        toast.error('Failed to add', { description: error instanceof Error ? error.message : 'Unknown error' });
         throw error;
       }
     }
@@ -115,10 +115,10 @@ export function KeyPulseApp() {
           providerId: data.providerId,
           proxyId: data.proxyId,
         });
-        toast.success('更新成功');
+        toast.success('Updated successfully');
         refetch();
       } catch (error) {
-        toast.error('更新失败', { description: error instanceof Error ? error.message : '未知错误' });
+        toast.error('Failed to update', { description: error instanceof Error ? error.message : 'Unknown error' });
         throw error;
       }
     }
@@ -131,10 +131,10 @@ export function KeyPulseApp() {
   }>) => {
     try {
       await addKeys(keysToAdd);
-      toast.success(`成功添加 ${keysToAdd.length} 个 Key`);
+      toast.success(`Successfully added ${keysToAdd.length} keys`);
       refetch();
     } catch (error) {
-      toast.error('批量添加失败', { description: error instanceof Error ? error.message : '未知错误' });
+      toast.error('Batch add failed', { description: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }, [addKeys, refetch]);
@@ -145,11 +145,11 @@ export function KeyPulseApp() {
   }) => {
     try {
       await updateKeys(selectedIds, updates);
-      toast.success(`成功更新 ${selectedIds.length} 个 Key`);
+      toast.success(`Successfully updated ${selectedIds.length} keys`);
       setSelectedIds([]);
       refetch();
     } catch (error) {
-      toast.error('批量更新失败', { description: error instanceof Error ? error.message : '未知错误' });
+      toast.error('Batch update failed', { description: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }, [selectedIds, updateKeys, refetch]);
@@ -162,11 +162,11 @@ export function KeyPulseApp() {
   const handleDeleteConfirm = useCallback(async () => {
     try {
       await deleteKeys(pendingDeleteIds);
-      toast.success(`成功删除 ${pendingDeleteIds.length} 个 Key`);
+      toast.success(`Successfully deleted ${pendingDeleteIds.length} keys`);
       setSelectedIds(prev => prev.filter(id => !pendingDeleteIds.includes(id)));
       refetch();
     } catch (error) {
-      toast.error('删除失败', { description: error instanceof Error ? error.message : '未知错误' });
+      toast.error('Delete failed', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
     setPendingDeleteIds([]);
   }, [pendingDeleteIds, deleteKeys, refetch]);
@@ -204,12 +204,12 @@ export function KeyPulseApp() {
             <Button variant="ghost" size="icon" asChild>
               <Link href="/settings">
                 <SettingsIcon />
-                <span className="sr-only">设置</span>
+                <span className="sr-only">Settings</span>
               </Link>
             </Button>
             <Button variant="ghost" onClick={handleLogout}>
               <LogOutIcon data-icon="inline-start" />
-              登出
+              Logout
             </Button>
           </div>
         </div>
@@ -223,11 +223,11 @@ export function KeyPulseApp() {
             {/* Add buttons */}
             <Button onClick={() => { setEditingKey(null); setKeyDialogOpen(true); }}>
               <PlusIcon data-icon="inline-start" />
-              添加
+              Add
             </Button>
             <Button variant="outline" onClick={() => setBatchAddDialogOpen(true)}>
               <ListPlusIcon data-icon="inline-start" />
-              批量添加
+              Batch Add
             </Button>
 
             <div className="h-4 w-px bg-border mx-1" />
@@ -236,7 +236,7 @@ export function KeyPulseApp() {
             {isValidating ? (
               <Button variant="destructive" onClick={stopValidation}>
                 <SquareIcon data-icon="inline-start" />
-                停止
+                Stop
               </Button>
             ) : (
               <Button
@@ -245,7 +245,7 @@ export function KeyPulseApp() {
                 disabled={keys.length === 0}
               >
                 <PlayIcon data-icon="inline-start" />
-                {selectedIds.length > 0 ? `验证 (${selectedIds.length})` : '全部验证'}
+                {selectedIds.length > 0 ? `Validate (${selectedIds.length})` : 'Validate All'}
               </Button>
             )}
 
@@ -254,14 +254,14 @@ export function KeyPulseApp() {
               <>
                 <Button variant="outline" onClick={() => setBatchEditDialogOpen(true)}>
                   <PencilIcon data-icon="inline-start" />
-                  编辑
+                  Edit
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={() => handleDeleteRequest(selectedIds)}
                 >
                   <TrashIcon data-icon="inline-start" />
-                  删除
+                  Delete
                 </Button>
               </>
             )}
@@ -271,23 +271,23 @@ export function KeyPulseApp() {
             {/* Filter & Search */}
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="状态" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="pending">待验证</SelectItem>
-                <SelectItem value="valid">有效</SelectItem>
-                <SelectItem value="invalid">无效</SelectItem>
-                <SelectItem value="rate_limited">限流</SelectItem>
-                <SelectItem value="timeout">超时</SelectItem>
-                <SelectItem value="error">错误</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="valid">Valid</SelectItem>
+                <SelectItem value="invalid">Invalid</SelectItem>
+                <SelectItem value="rate_limited">Rate Limited</SelectItem>
+                <SelectItem value="timeout">Timeout</SelectItem>
+                <SelectItem value="error">Error</SelectItem>
               </SelectContent>
             </Select>
 
             <div className="relative">
               <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="搜索..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 className="w-[160px] pl-7"
@@ -301,7 +301,7 @@ export function KeyPulseApp() {
               disabled={keys.length === 0}
             >
               <DownloadIcon />
-              <span className="sr-only">导出</span>
+              <span className="sr-only">Export</span>
             </Button>
           </div>
 
@@ -371,9 +371,9 @@ export function KeyPulseApp() {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="确认删除"
-        description={`确定要删除 ${pendingDeleteIds.length} 个 Key 吗？此操作不可撤销。`}
-        confirmText="删除"
+        title="Confirm Delete"
+        description={`Are you sure you want to delete ${pendingDeleteIds.length} keys? This action cannot be undone.`}
+        confirmText="Delete"
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />

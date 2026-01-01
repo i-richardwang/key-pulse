@@ -95,9 +95,9 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>批量编辑</DialogTitle>
+          <DialogTitle>Batch Edit</DialogTitle>
           <DialogDescription>
-            修改已选中的 {selectedCount} 个 Key。只有勾选的字段会被更新。
+            Modify {selectedCount} selected keys. Only checked fields will be updated.
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +106,7 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
             {/* Provider */}
             <Field orientation="horizontal">
               <Switch checked={updateProvider} onCheckedChange={setUpdateProvider} />
-              <FieldLabel>修改 Provider</FieldLabel>
+              <FieldLabel>Change Provider</FieldLabel>
             </Field>
             {updateProvider && (
               <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -116,7 +116,7 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
                   disabled={isFormLoading || providers.length === 0}
                 >
                   <SelectTrigger id="batch-edit-provider">
-                    <SelectValue placeholder={providers.length === 0 ? '请先添加 Provider' : '选择 Provider'} />
+                    <SelectValue placeholder={providers.length === 0 ? 'Add a Provider first' : 'Select Provider'} />
                   </SelectTrigger>
                   <SelectContent>
                     {providers.map((p) => (
@@ -144,7 +144,7 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
             <div className="border-t pt-4">
               <Field orientation="horizontal">
                 <Switch checked={updateProxy} onCheckedChange={setUpdateProxy} />
-                <FieldLabel>修改 Proxy</FieldLabel>
+                <FieldLabel>Change Proxy</FieldLabel>
               </Field>
 
               {updateProxy && (
@@ -155,10 +155,10 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
                     disabled={isFormLoading}
                   >
                     <SelectTrigger id="batch-edit-proxy">
-                      <SelectValue placeholder="选择 Proxy" />
+                      <SelectValue placeholder="Select Proxy" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">不使用代理</SelectItem>
+                      <SelectItem value="none">No Proxy</SelectItem>
                       {proxies.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name} ({p.host}:{p.port})
@@ -169,9 +169,9 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
 
                   {selectedProxy && (
                     <div className="rounded-md bg-muted px-3 py-2 text-sm">
-                      <span className="text-muted-foreground">类型: </span>
+                      <span className="text-muted-foreground">Type: </span>
                       <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
-                      <span className="text-muted-foreground ml-3">地址: </span>
+                      <span className="text-muted-foreground ml-3">Address: </span>
                       <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
                     </div>
                   )}
@@ -182,13 +182,13 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              取消
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || (!updateProvider && !updateProxy) || (updateProvider && !providerId)}
             >
-              {isLoading ? '保存中...' : '保存'}
+              {isLoading ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

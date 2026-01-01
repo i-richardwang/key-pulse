@@ -57,10 +57,10 @@ export function ProvidersPanel() {
 
     try {
       await deleteProviders([deleteTarget.id]);
-      toast.success('Provider 已删除');
+      toast.success('Provider deleted');
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '删除失败');
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
@@ -76,7 +76,7 @@ export function ProvidersPanel() {
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleAdd}>
             <PlusIcon data-icon="inline-start" />
-            添加
+            Add
           </Button>
         </div>
 
@@ -85,11 +85,11 @@ export function ProvidersPanel() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>名称</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Base URL</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead className="text-center">Keys</TableHead>
-                <TableHead className="text-center">默认</TableHead>
+                <TableHead className="text-center">Default</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -97,13 +97,13 @@ export function ProvidersPanel() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    加载中...
+                    Loading...
                   </TableCell>
                 </TableRow>
               ) : providers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    暂无 Provider，点击"添加"按钮添加
+                    No providers yet. Click &quot;Add&quot; to create one.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -136,13 +136,13 @@ export function ProvidersPanel() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontalIcon />
-                            <span className="sr-only">操作</span>
+                            <span className="sr-only">Actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(provider)}>
                             <PencilIcon />
-                            编辑
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
@@ -150,7 +150,7 @@ export function ProvidersPanel() {
                             disabled={provider.keyCount > 0}
                           >
                             <TrashIcon />
-                            删除
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -175,9 +175,9 @@ export function ProvidersPanel() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="删除 Provider"
-        description={`确定要删除 "${deleteTarget?.name}" 吗？此操作不可恢复。`}
-        confirmText="删除"
+        title="Delete Provider"
+        description={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />

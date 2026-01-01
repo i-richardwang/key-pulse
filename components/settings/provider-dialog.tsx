@@ -72,7 +72,7 @@ export function ProviderDialog({
           description: description || undefined,
           isDefault,
         });
-        toast.success('Provider 已更新');
+        toast.success('Provider updated');
       } else {
         await createProvider({
           name,
@@ -81,11 +81,11 @@ export function ProviderDialog({
           description: description || undefined,
           isDefault,
         });
-        toast.success('Provider 已创建');
+        toast.success('Provider created');
       }
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '操作失败');
+      toast.error(err instanceof Error ? err.message : 'Operation failed');
     }
   };
 
@@ -93,13 +93,13 @@ export function ProviderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑 Provider' : '添加 Provider'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="provider-name">名称</FieldLabel>
+              <FieldLabel htmlFor="provider-name">Name</FieldLabel>
               <Input
                 id="provider-name"
                 placeholder="OpenAI GPT-4"
@@ -132,10 +132,10 @@ export function ProviderDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="provider-description">描述 (可选)</FieldLabel>
+              <FieldLabel htmlFor="provider-description">Description (optional)</FieldLabel>
               <Input
                 id="provider-description"
-                placeholder="简短描述"
+                placeholder="Brief description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -146,16 +146,16 @@ export function ProviderDialog({
                 checked={isDefault}
                 onCheckedChange={setIsDefault}
               />
-              <FieldLabel>设为默认 Provider</FieldLabel>
+              <FieldLabel>Set as default Provider</FieldLabel>
             </Field>
           </FieldGroup>
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !name || !baseUrl || !model}>
-              {isLoading ? '保存中...' : '保存'}
+              {isLoading ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

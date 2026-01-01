@@ -80,7 +80,7 @@ export function ProxyDialog({
 
     const portNum = parseInt(port, 10);
     if (isNaN(portNum) || portNum <= 0 || portNum > 65535) {
-      toast.error('端口号必须是 1-65535 之间的数字');
+      toast.error('Port must be a number between 1-65535');
       return;
     }
 
@@ -97,7 +97,7 @@ export function ProxyDialog({
           description: description || undefined,
           isDefault,
         });
-        toast.success('Proxy 已更新');
+        toast.success('Proxy updated');
       } else {
         await createProxy({
           name,
@@ -109,11 +109,11 @@ export function ProxyDialog({
           description: description || undefined,
           isDefault,
         });
-        toast.success('Proxy 已创建');
+        toast.success('Proxy created');
       }
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '操作失败');
+      toast.error(err instanceof Error ? err.message : 'Operation failed');
     }
   };
 
@@ -121,16 +121,16 @@ export function ProxyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑 Proxy' : '添加 Proxy'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Proxy' : 'Add Proxy'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="proxy-name">名称</FieldLabel>
+              <FieldLabel htmlFor="proxy-name">Name</FieldLabel>
               <Input
                 id="proxy-name"
-                placeholder="香港代理"
+                placeholder="HK Proxy"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -139,7 +139,7 @@ export function ProxyDialog({
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field>
-                <FieldLabel htmlFor="proxy-type">类型</FieldLabel>
+                <FieldLabel htmlFor="proxy-type">Type</FieldLabel>
                 <Select value={type} onValueChange={(v) => setType(v as ProxyType)}>
                   <SelectTrigger id="proxy-type">
                     <SelectValue />
@@ -152,7 +152,7 @@ export function ProxyDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="proxy-host">主机</FieldLabel>
+                <FieldLabel htmlFor="proxy-host">Host</FieldLabel>
                 <Input
                   id="proxy-host"
                   placeholder="127.0.0.1"
@@ -163,7 +163,7 @@ export function ProxyDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="proxy-port">端口</FieldLabel>
+                <FieldLabel htmlFor="proxy-port">Port</FieldLabel>
                 <Input
                   id="proxy-port"
                   type="number"
@@ -177,21 +177,21 @@ export function ProxyDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <FieldLabel htmlFor="proxy-username">用户名 (可选)</FieldLabel>
+                <FieldLabel htmlFor="proxy-username">Username (optional)</FieldLabel>
                 <Input
                   id="proxy-username"
-                  placeholder="用户名"
+                  placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="proxy-password">密码 (可选)</FieldLabel>
+                <FieldLabel htmlFor="proxy-password">Password (optional)</FieldLabel>
                 <Input
                   id="proxy-password"
                   type="password"
-                  placeholder="密码"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -199,10 +199,10 @@ export function ProxyDialog({
             </div>
 
             <Field>
-              <FieldLabel htmlFor="proxy-description">描述 (可选)</FieldLabel>
+              <FieldLabel htmlFor="proxy-description">Description (optional)</FieldLabel>
               <Input
                 id="proxy-description"
-                placeholder="简短描述"
+                placeholder="Brief description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -213,16 +213,16 @@ export function ProxyDialog({
                 checked={isDefault}
                 onCheckedChange={setIsDefault}
               />
-              <FieldLabel>设为默认 Proxy</FieldLabel>
+              <FieldLabel>Set as default Proxy</FieldLabel>
             </Field>
           </FieldGroup>
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !name || !host || !port}>
-              {isLoading ? '保存中...' : '保存'}
+              {isLoading ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

@@ -17,10 +17,10 @@ export default function SettingsPage() {
             <Link href="/">
               <Button variant="ghost" size="icon">
                 <ArrowLeftIcon />
-                <span className="sr-only">返回</span>
+                <span className="sr-only">Back</span>
               </Button>
             </Link>
-            <span className="font-semibold">设置</span>
+            <span className="font-semibold">Settings</span>
           </div>
         </div>
       </header>

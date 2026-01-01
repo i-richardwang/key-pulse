@@ -1,8 +1,7 @@
 /**
- * 共享常量配置
+ * Shared constants configuration
  */
 
-// 常用模型列表
 export const COMMON_MODELS = [
   'gpt-3.5-turbo',
   'gpt-4',
@@ -16,7 +15,6 @@ export const COMMON_MODELS = [
 
 export type CommonModel = typeof COMMON_MODELS[number];
 
-// 状态配置
 export type KeyStatus = 'pending' | 'valid' | 'invalid' | 'validating' | 'rate_limited' | 'timeout' | 'error';
 
 export interface StatusConfig {
@@ -27,43 +25,41 @@ export interface StatusConfig {
 
 export const STATUS_CONFIG: Record<KeyStatus, StatusConfig> = {
   pending: {
-    label: '待验证',
+    label: 'Pending',
     variant: 'secondary'
   },
   validating: {
-    label: '验证中',
+    label: 'Validating',
     variant: 'outline',
     className: 'animate-pulse'
   },
   valid: {
-    label: '有效',
+    label: 'Valid',
     variant: 'default',
     className: 'bg-green-600 hover:bg-green-600/90'
   },
   invalid: {
-    label: '无效',
+    label: 'Invalid',
     variant: 'destructive'
   },
   rate_limited: {
-    label: '限流',
+    label: 'Rate Limited',
     variant: 'outline',
     className: 'text-amber-600 border-amber-300'
   },
   timeout: {
-    label: '超时',
+    label: 'Timeout',
     variant: 'outline',
     className: 'text-amber-600 border-amber-300'
   },
   error: {
-    label: '错误',
+    label: 'Error',
     variant: 'destructive'
   },
 };
 
-// 表格排序配置
 export type SortField = 'createdAt' | 'lastValidatedAt' | 'status' | 'baseUrl';
 export type SortOrder = 'asc' | 'desc';
 
-// 导出格式
 export type ExportFormat = 'txt' | 'csv' | 'json';
 export type ExportContent = 'all' | 'valid' | 'invalid';

@@ -1,5 +1,5 @@
 /**
- * API Key 验证 SSE 接口
+ * API Key Validation SSE Endpoint
  * POST /api/validate
  */
 
@@ -9,17 +9,11 @@ import { eq, inArray } from 'drizzle-orm';
 import { validateSingleKey } from '@/lib/api-validator';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
 
-/**
- * 发送 SSE 事件
- */
 function sendEvent(controller: ReadableStreamDefaultController, event: SSEEvent) {
   const data = `data: ${JSON.stringify(event)}\n\n`;
   controller.enqueue(new TextEncoder().encode(data));
 }
 
-/**
- * 发送日志事件
- */
 function sendLog(
   controller: ReadableStreamDefaultController,
   level: 'info' | 'warn' | 'error',
@@ -91,11 +85,11 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const startTime = Date.now();
 
-        // 发送开始事件
+        // Send start event
         sendEvent(controller, { type: 'start', total: keys.length });
-        sendLog(controller, 'info', `开始验证 ${keys.length} 个 Key...`);
+        sendLog(controller, 'info', `Starting validation of ${keys.length} keys...`);
 
-        // 初始化统计
+        // Initialize stats
         const summary: ValidationSummary = {
           total: keys.length,
           valid: 0,
@@ -116,14 +110,14 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // 检查 provider 是否存在
+            // Check if provider exists
             if (!keyRecord.providerBaseUrl || !keyRecord.providerModel) {
-              sendLog(controller, 'error', `[${i + 1}/${keys.length}] Key ${keyRecord.maskedKey} 缺少 Provider 配置`);
+              sendLog(controller, 'error', `[${i + 1}/${keys.length}] Key ${keyRecord.maskedKey} missing Provider config`);
               summary.error++;
               continue;
             }
 
-            // 构建该 key 的配置（从关联的 provider 和 proxy 获取）
+            // Build config for this key (from associated provider and proxy)
             const config: ValidationConfig = {
               baseUrl: keyRecord.providerBaseUrl,
               model: keyRecord.providerModel,
@@ -182,15 +176,15 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            // 发送日志
+            // Send log
             const statusText = {
-              valid: '有效',
-              invalid: '无效',
-              rate_limited: '限流',
-              timeout: '超时',
-              error: '错误',
-              pending: '等待中',
-              validating: '验证中',
+              valid: 'Valid',
+              invalid: 'Invalid',
+              rate_limited: 'Rate Limited',
+              timeout: 'Timeout',
+              error: 'Error',
+              pending: 'Pending',
+              validating: 'Validating',
             }[result.status];
 
             const logLevel = result.status === 'valid' ? 'info' : 'warn';
@@ -203,23 +197,23 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          // 计算总耗时
+          // Calculate total duration
           summary.duration = Date.now() - startTime;
 
-          // 发送完成事件
+          // Send complete event
           sendEvent(controller, { type: 'complete', summary });
           sendLog(
             controller,
             'info',
-            `验证完成! 有效: ${summary.valid}, 无效: ${summary.invalid}, 限流: ${summary.rateLimited}, 超时: ${summary.timeout}, 错误: ${summary.error}, 耗时: ${(summary.duration / 1000).toFixed(1)}s`
+            `Validation complete! Valid: ${summary.valid}, Invalid: ${summary.invalid}, Rate Limited: ${summary.rateLimited}, Timeout: ${summary.timeout}, Error: ${summary.error}, Duration: ${(summary.duration / 1000).toFixed(1)}s`
           );
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') {
-            sendLog(controller, 'warn', '验证已取消');
+            sendLog(controller, 'warn', 'Validation cancelled');
           } else {
             const message = error instanceof Error ? error.message : 'Unknown error';
             sendEvent(controller, { type: 'error', message });
-            sendLog(controller, 'error', `验证出错: ${message}`);
+            sendLog(controller, 'error', `Validation error: ${message}`);
           }
         }
 
@@ -236,7 +230,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no', // 禁用 nginx 缓冲
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {
