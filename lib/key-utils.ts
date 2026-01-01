@@ -26,13 +26,6 @@ export function parseKeys(input: string): string[] {
 }
 
 /**
- * Generate unique ID
- */
-export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-/**
  * Format timestamp to local time string
  */
 export function formatTimestamp(timestamp: number): string {

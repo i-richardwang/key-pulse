@@ -95,12 +95,9 @@ export const validateRequestSchema = z.object({
 });
 
 // ============================================
-// Inferred Types
+// Auth Schema
 // ============================================
 
-export type ProviderInput = z.infer<typeof providerSchema>;
-export type ProviderUpdateInput = z.infer<typeof providerUpdateSchema>;
-export type ProxyInput = z.infer<typeof proxySchema>;
-export type ProxyUpdateInput = z.infer<typeof proxyUpdateSchema>;
-export type KeyAddInput = z.infer<typeof keyAddSchema>;
-export type KeyUpdateInput = z.infer<typeof keyUpdateSchema>;
+export const loginSchema = z.object({
+  password: z.string().min(1, { error: 'Password is required' }),
+});

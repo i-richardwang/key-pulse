@@ -26,20 +26,3 @@ export async function parseBody<T extends z.ZodSchema>(
     return { error: NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }) };
   }
 }
-
-/**
- * Validate data against a Zod schema (for client-side use)
- * Returns either validated data or error message
- */
-export function validate<T extends z.ZodSchema>(
-  data: unknown,
-  schema: T
-): { success: true; data: z.infer<T> } | { success: false; error: string } {
-  const result = schema.safeParse(data);
-
-  if (!result.success) {
-    return { success: false, error: result.error.issues[0]?.message || 'Validation failed' };
-  }
-
-  return { success: true, data: result.data };
-}

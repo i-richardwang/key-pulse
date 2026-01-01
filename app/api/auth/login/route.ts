@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setAuthCookie, validatePassword } from '@/lib/auth';
+import { parseBody } from '@/lib/api-utils';
+import { loginSchema } from '@/lib/schemas';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { password } = body;
+    const parsed = await parseBody(request, loginSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!password || typeof password !== 'string') {
-      return NextResponse.json({ error: 'Password required' }, { status: 400 });
-    }
+    const { password } = parsed.data;
 
     if (!validatePassword(password)) {
       return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
