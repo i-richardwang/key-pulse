@@ -21,6 +21,8 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
 import { useProxies } from '@/hooks/use-proxies';
+import { z } from 'zod';
+import { toast } from 'sonner';
 
 interface BatchEditDialogProps {
   open: boolean;
@@ -48,28 +50,41 @@ export function BatchEditDialog({ open, onOpenChange, selectedCount, onSave }: B
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const updates: {
+      providerId?: string;
+      proxyId?: string | null;
+    } = {};
+
+    if (updateProvider && providerId) {
+      updates.providerId = providerId;
+    }
+
+    if (updateProxy) {
+      updates.proxyId = proxyId === 'none' ? null : proxyId;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      onOpenChange(false);
+      return;
+    }
+
+    // Validate with Zod
+    const updateSchema = z.object({
+      providerId: z.uuid().optional(),
+      proxyId: z.uuid().nullable().optional(),
+    });
+
+    const result = updateSchema.safeParse(updates);
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || 'Validation failed');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const updates: {
-        providerId?: string;
-        proxyId?: string | null;
-      } = {};
-
-      if (updateProvider && providerId) {
-        updates.providerId = providerId;
-      }
-
-      if (updateProxy) {
-        updates.proxyId = proxyId === 'none' ? null : proxyId;
-      }
-
-      if (Object.keys(updates).length === 0) {
-        onOpenChange(false);
-        return;
-      }
-
-      await onSave(updates);
+      await onSave(result.data);
       onOpenChange(false);
     } catch {
       // Error handled by parent with toast

@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const AUTH_COOKIE_NAME = 'keypulse-auth';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const authPassword = process.env.AUTH_PASSWORD;
 
   // If no password is configured, skip auth

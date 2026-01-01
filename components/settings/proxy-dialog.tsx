@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useCreateProxy, useUpdateProxy } from '@/hooks/use-proxies';
+import { proxySchema } from '@/lib/schemas';
 import { toast } from 'sonner';
 import type { Proxy, ProxyType } from '@/db/schema';
 
@@ -79,8 +80,21 @@ export function ProxyDialog({
     e.preventDefault();
 
     const portNum = parseInt(port, 10);
-    if (isNaN(portNum) || portNum <= 0 || portNum > 65535) {
-      toast.error('Port must be a number between 1-65535');
+
+    // Validate with Zod
+    const result = proxySchema.safeParse({
+      name,
+      type,
+      host,
+      port: portNum,
+      username: username || undefined,
+      password: password || undefined,
+      description: description || undefined,
+      isDefault,
+    });
+
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || 'Validation failed');
       return;
     }
 
@@ -88,26 +102,26 @@ export function ProxyDialog({
       if (isEditing) {
         await updateProxy({
           id: editProxy.id,
-          name,
-          type,
-          host,
-          port: portNum,
-          username: username || undefined,
-          password: password || undefined,
-          description: description || undefined,
-          isDefault,
+          name: result.data.name,
+          type: result.data.type,
+          host: result.data.host,
+          port: result.data.port,
+          username: result.data.username ?? undefined,
+          password: result.data.password ?? undefined,
+          description: result.data.description ?? undefined,
+          isDefault: result.data.isDefault,
         });
         toast.success('Proxy updated');
       } else {
         await createProxy({
-          name,
-          type,
-          host,
-          port: portNum,
-          username: username || undefined,
-          password: password || undefined,
-          description: description || undefined,
-          isDefault,
+          name: result.data.name,
+          type: result.data.type,
+          host: result.data.host,
+          port: result.data.port,
+          username: result.data.username ?? undefined,
+          password: result.data.password ?? undefined,
+          description: result.data.description ?? undefined,
+          isDefault: result.data.isDefault,
         });
         toast.success('Proxy created');
       }

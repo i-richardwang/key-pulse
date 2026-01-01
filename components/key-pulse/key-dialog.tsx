@@ -20,6 +20,8 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
 import { useProxies } from '@/hooks/use-proxies';
+import { keyAddSchema } from '@/lib/schemas';
+import { toast } from 'sonner';
 import type { ApiKeyWithRelations } from '@/hooks/use-keys';
 
 interface KeyDialogProps {
@@ -69,6 +71,21 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // For add mode, validate with Zod
+    if (!isEditing) {
+      const result = keyAddSchema.safeParse({
+        key,
+        providerId,
+        proxyId: proxyId === 'none' ? null : proxyId,
+      });
+
+      if (!result.success) {
+        toast.error(result.error.issues[0]?.message || 'Validation failed');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {

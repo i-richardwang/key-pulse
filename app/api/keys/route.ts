@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray, like, desc, asc, sql, and, SQL } from 'drizzle-orm';
 import { maskKey } from '@/lib/key-utils';
+import { parseBody } from '@/lib/api-utils';
+import { keyBatchAddSchema, keyUpdateSchema, keyDeleteSchema } from '@/lib/schemas';
 import type { ApiKeyStatus } from '@/db/schema';
 
 // GET /api/keys - List all keys with pagination and filtering
@@ -114,24 +116,14 @@ export async function GET(request: NextRequest) {
 // POST /api/keys - Add keys (single or batch)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseBody(request, keyBatchAddSchema);
+    if ('error' in parsed) return parsed.error;
 
-    // Support both single key and batch
-    const keysToAdd: Array<{
-      key: string;
-      providerId: string;
-      proxyId?: string | null;
-    }> = Array.isArray(body) ? body : [body];
-
-    if (keysToAdd.length === 0) {
-      return NextResponse.json({ error: 'No keys provided' }, { status: 400 });
-    }
+    // Normalize to array
+    const keysToAdd = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
 
     // Validate providerId exists
-    const providerIds = [...new Set(keysToAdd.map(k => k.providerId).filter(Boolean))];
-    if (providerIds.length === 0) {
-      return NextResponse.json({ error: 'providerId is required' }, { status: 400 });
-    }
+    const providerIds = [...new Set(keysToAdd.map(k => k.providerId))];
 
     const validProviders = await db
       .select({ id: providers.id })
@@ -156,19 +148,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare insert data
-    const insertData = keysToAdd
-      .filter(item => item.key && item.key.trim() && item.providerId)
-      .map(item => ({
-        key: item.key.trim(),
-        maskedKey: maskKey(item.key.trim()),
-        providerId: item.providerId,
-        proxyId: item.proxyId || null,
-        status: 'pending' as const,
-      }));
-
-    if (insertData.length === 0) {
-      return NextResponse.json({ error: 'No valid keys provided' }, { status: 400 });
-    }
+    const insertData = keysToAdd.map(item => ({
+      key: item.key.trim(),
+      maskedKey: maskKey(item.key.trim()),
+      providerId: item.providerId,
+      proxyId: item.proxyId || null,
+      status: 'pending' as const,
+    }));
 
     const inserted = await db.insert(apiKeys).values(insertData).returning();
 
@@ -182,16 +168,10 @@ export async function POST(request: NextRequest) {
 // PUT /api/keys - Batch update keys
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { ids, updates } = body;
+    const parsed = await parseBody(request, keyUpdateSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'ids array required' }, { status: 400 });
-    }
-
-    if (!updates || typeof updates !== 'object') {
-      return NextResponse.json({ error: 'updates object required' }, { status: 400 });
-    }
+    const { ids, updates } = parsed.data;
 
     // Build update data, only include allowed fields
     const updateData: Record<string, unknown> = {
@@ -243,12 +223,10 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/keys - Delete keys
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { ids } = body;
+    const parsed = await parseBody(request, keyDeleteSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'ids array required' }, { status: 400 });
-    }
+    const { ids } = parsed.data;
 
     await db.delete(apiKeys).where(inArray(apiKeys.id, ids));
 

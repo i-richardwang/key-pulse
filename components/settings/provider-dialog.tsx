@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useCreateProvider, useUpdateProvider } from '@/hooks/use-providers';
+import { providerSchema } from '@/lib/schemas';
 import { toast } from 'sonner';
 import type { Provider } from '@/db/schema';
 
@@ -62,24 +63,38 @@ export function ProviderDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate with Zod
+    const result = providerSchema.safeParse({
+      name,
+      baseUrl,
+      model,
+      description: description || undefined,
+      isDefault,
+    });
+
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || 'Validation failed');
+      return;
+    }
+
     try {
       if (isEditing) {
         await updateProvider({
           id: editProvider.id,
-          name,
-          baseUrl,
-          model,
-          description: description || undefined,
-          isDefault,
+          name: result.data.name,
+          baseUrl: result.data.baseUrl,
+          model: result.data.model,
+          description: result.data.description ?? undefined,
+          isDefault: result.data.isDefault,
         });
         toast.success('Provider updated');
       } else {
         await createProvider({
-          name,
-          baseUrl,
-          model,
-          description: description || undefined,
-          isDefault,
+          name: result.data.name,
+          baseUrl: result.data.baseUrl,
+          model: result.data.model,
+          description: result.data.description ?? undefined,
+          isDefault: result.data.isDefault,
         });
         toast.success('Provider created');
       }

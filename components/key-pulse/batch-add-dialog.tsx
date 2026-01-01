@@ -22,6 +22,9 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
 import { useProxies } from '@/hooks/use-proxies';
 import { parseKeys } from '@/lib/key-utils';
+import { keyAddSchema } from '@/lib/schemas';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 interface BatchAddDialogProps {
   open: boolean;
@@ -64,16 +67,25 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
     e.preventDefault();
     if (uniqueKeys.length === 0) return;
 
+    // Validate all keys with Zod
+    const keysToAdd = uniqueKeys.map(key => ({
+      key,
+      providerId,
+      proxyId: proxyId === 'none' ? null : proxyId,
+    }));
+
+    const batchSchema = z.array(keyAddSchema).min(1).max(1000);
+    const result = batchSchema.safeParse(keysToAdd);
+
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || 'Validation failed');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const keysToAdd = uniqueKeys.map(key => ({
-        key,
-        providerId,
-        proxyId: proxyId === 'none' ? null : proxyId,
-      }));
-
-      await onSave(keysToAdd);
+      await onSave(result.data);
       onOpenChange(false);
     } catch {
       // Error handled by parent with toast

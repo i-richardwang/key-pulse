@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, providers, apiKeys } from '@/db';
 import { eq, inArray, sql, desc } from 'drizzle-orm';
+import { parseBody } from '@/lib/api-utils';
+import { providerSchema, providerUpdateSchema, providerDeleteSchema } from '@/lib/schemas';
 
 // GET /api/providers - List all providers
 export async function GET() {
@@ -33,15 +35,10 @@ export async function GET() {
 // POST /api/providers - Create a new provider
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, baseUrl, model, description, isDefault } = body;
+    const parsed = await parseBody(request, providerSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!name || !baseUrl || !model) {
-      return NextResponse.json(
-        { error: 'name, baseUrl, and model are required' },
-        { status: 400 }
-      );
-    }
+    const { name, baseUrl, model, description, isDefault } = parsed.data;
 
     // If this is set as default, unset other defaults
     if (isDefault) {
@@ -73,12 +70,10 @@ export async function POST(request: NextRequest) {
 // PUT /api/providers - Update a provider
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, name, baseUrl, model, description, isDefault } = body;
+    const parsed = await parseBody(request, providerUpdateSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
-    }
+    const { id, name, baseUrl, model, description, isDefault } = parsed.data;
 
     // Build update data
     const updateData: Record<string, unknown> = {
@@ -123,12 +118,10 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/providers - Delete providers
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { ids } = body;
+    const parsed = await parseBody(request, providerDeleteSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'ids array required' }, { status: 400 });
-    }
+    const { ids } = parsed.data;
 
     // Check if any provider has associated keys
     const keysUsingProviders = await db

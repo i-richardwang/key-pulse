@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, proxies, apiKeys } from '@/db';
 import { eq, inArray, sql, desc } from 'drizzle-orm';
+import { parseBody } from '@/lib/api-utils';
+import { proxySchema, proxyUpdateSchema, proxyDeleteSchema } from '@/lib/schemas';
 
 // GET /api/proxies - List all proxies
 export async function GET() {
@@ -36,22 +38,10 @@ export async function GET() {
 // POST /api/proxies - Create a new proxy
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, type, host, port, username, password, description, isDefault } = body;
+    const parsed = await parseBody(request, proxySchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!name || !type || !host || !port) {
-      return NextResponse.json(
-        { error: 'name, type, host, and port are required' },
-        { status: 400 }
-      );
-    }
-
-    if (type !== 'http' && type !== 'socks5') {
-      return NextResponse.json(
-        { error: 'type must be "http" or "socks5"' },
-        { status: 400 }
-      );
-    }
+    const { name, type, host, port, username, password, description, isDefault } = parsed.data;
 
     // If this is set as default, unset other defaults
     if (isDefault) {
@@ -65,7 +55,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         type,
         host: host.trim(),
-        port: parseInt(String(port), 10),
+        port,
         username: username?.trim() || null,
         password: password || null,
         description: description?.trim() || null,
@@ -86,19 +76,10 @@ export async function POST(request: NextRequest) {
 // PUT /api/proxies - Update a proxy
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, name, type, host, port, username, password, description, isDefault } = body;
+    const parsed = await parseBody(request, proxyUpdateSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
-    }
-
-    if (type !== undefined && type !== 'http' && type !== 'socks5') {
-      return NextResponse.json(
-        { error: 'type must be "http" or "socks5"' },
-        { status: 400 }
-      );
-    }
+    const { id, name, type, host, port, username, password, description, isDefault } = parsed.data;
 
     // Build update data
     const updateData: Record<string, unknown> = {
@@ -108,7 +89,7 @@ export async function PUT(request: NextRequest) {
     if (name !== undefined) updateData.name = name.trim();
     if (type !== undefined) updateData.type = type;
     if (host !== undefined) updateData.host = host.trim();
-    if (port !== undefined) updateData.port = parseInt(String(port), 10);
+    if (port !== undefined) updateData.port = port;
     if (username !== undefined) updateData.username = username?.trim() || null;
     if (password !== undefined) updateData.password = password || null;
     if (description !== undefined) updateData.description = description?.trim() || null;
@@ -146,12 +127,10 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/proxies - Delete proxies
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { ids } = body;
+    const parsed = await parseBody(request, proxyDeleteSchema);
+    if ('error' in parsed) return parsed.error;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'ids array required' }, { status: 400 });
-    }
+    const { ids } = parsed.data;
 
     // Check if any proxy has associated keys
     const keysUsingProxies = await db

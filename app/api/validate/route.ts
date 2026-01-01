@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray } from 'drizzle-orm';
 import { validateSingleKey } from '@/lib/api-validator';
+import { validateRequestSchema } from '@/lib/schemas';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
 
 function sendEvent(controller: ReadableStreamDefaultController, event: SSEEvent) {
@@ -30,22 +31,18 @@ function sendLog(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { keyIds } = body as { keyIds: string[] };
 
-    // Validate request
-    if (!keyIds || !Array.isArray(keyIds) || keyIds.length === 0) {
-      return new Response(JSON.stringify({ error: 'No key IDs provided' }), {
+    // Validate request with Zod
+    const parsed = validateRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map(i => i.message).join(', ');
+      return new Response(JSON.stringify({ error: errors }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    if (keyIds.length > 1000) {
-      return new Response(JSON.stringify({ error: 'Too many keys (max 1000)' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const { keyIds } = parsed.data;
 
     // Fetch keys with associated provider and proxy from database
     const keys = await db
