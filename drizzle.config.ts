@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
 
-// 加载 .env.local 文件
+// Load .env.local file
 config({ path: '.env.local' });
 
 export default defineConfig({

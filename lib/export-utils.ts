@@ -1,11 +1,11 @@
 /**
- * 导出工具函数
+ * Export utility functions
  */
 
 import type { ValidationResult, ExportOptions } from '@/types';
 
 /**
- * 过滤结果
+ * Filter results by content type
  */
 function filterResults(
   results: ValidationResult[],
@@ -22,7 +22,7 @@ function filterResults(
 }
 
 /**
- * 导出为 JSON
+ * Export to JSON format
  */
 export function exportToJSON(
   results: ValidationResult[],
@@ -34,7 +34,7 @@ export function exportToJSON(
     return JSON.stringify(filtered, null, 2);
   }
 
-  // 仅导出 key 和状态
+  // Export only key and status
   return JSON.stringify(
     filtered.map((r) => ({
       key: r.key,
@@ -47,7 +47,7 @@ export function exportToJSON(
 }
 
 /**
- * 导出为 CSV
+ * Export to CSV format
  */
 export function exportToCSV(
   results: ValidationResult[],
@@ -79,7 +79,7 @@ export function exportToCSV(
     ].join('\n');
   }
 
-  // 简单格式
+  // Simple format
   const headers = ['Key', 'Status'];
   const rows = filtered.map((r) => [r.key, r.status]);
 
@@ -90,7 +90,7 @@ export function exportToCSV(
 }
 
 /**
- * 导出为 TXT (仅 Key 列表)
+ * Export to TXT format (key list only)
  */
 export function exportToTXT(
   results: ValidationResult[],
@@ -109,12 +109,12 @@ export function exportToTXT(
       .join('\n');
   }
 
-  // 仅 Key 列表
+  // Key list only
   return filtered.map((r) => r.key).join('\n');
 }
 
 /**
- * 下载文件
+ * Download file
  */
 export function downloadFile(
   content: string,
@@ -135,7 +135,7 @@ export function downloadFile(
 }
 
 /**
- * 执行导出
+ * Execute export
  */
 export function exportResults(
   results: ValidationResult[],

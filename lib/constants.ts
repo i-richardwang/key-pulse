@@ -2,19 +2,6 @@
  * Shared constants configuration
  */
 
-export const COMMON_MODELS = [
-  'gpt-3.5-turbo',
-  'gpt-4',
-  'gpt-4-turbo',
-  'gpt-4o',
-  'gpt-4o-mini',
-  'claude-3-opus',
-  'claude-3-sonnet',
-  'claude-3-haiku',
-] as const;
-
-export type CommonModel = typeof COMMON_MODELS[number];
-
 export type KeyStatus = 'pending' | 'valid' | 'invalid' | 'validating' | 'rate_limited' | 'timeout' | 'error';
 
 export interface StatusConfig {
@@ -57,9 +44,6 @@ export const STATUS_CONFIG: Record<KeyStatus, StatusConfig> = {
     variant: 'destructive'
   },
 };
-
-export type SortField = 'createdAt' | 'lastValidatedAt' | 'status' | 'baseUrl';
-export type SortOrder = 'asc' | 'desc';
 
 export type ExportFormat = 'txt' | 'csv' | 'json';
 export type ExportContent = 'all' | 'valid' | 'invalid';

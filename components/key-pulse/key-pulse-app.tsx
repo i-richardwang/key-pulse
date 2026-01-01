@@ -51,7 +51,7 @@ export function KeyPulseApp() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch keys
-  const { data: keys, pagination, isLoading, refetch } = useKeys({
+  const { data: keys, pagination, isLoading, refetch, updateKeyLocally } = useKeys({
     page,
     limit: 50,
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -82,6 +82,39 @@ export function KeyPulseApp() {
   const validCount = useMemo(() => keys.filter(k => k.status === 'valid').length, [keys]);
   const invalidCount = useMemo(() => keys.filter(k => k.status === 'invalid').length, [keys]);
 
+  // Real-time validation progress handler
+  const handleValidationProgress = useCallback((result: {
+    keyId: string;
+    status: string;
+    responseTime?: number;
+    errorMessage?: string;
+    lastValidatedAt: string;
+  }) => {
+    updateKeyLocally(result.keyId, {
+      status: result.status,
+      responseTime: result.responseTime ?? null,
+      errorMessage: result.errorMessage ?? null,
+      lastValidatedAt: result.lastValidatedAt,
+    });
+  }, [updateKeyLocally]);
+
+  const handleValidate = useCallback(async (ids: string[]) => {
+    const idsToValidate = ids.length > 0 ? ids : keys.map(k => k.id);
+    if (idsToValidate.length === 0) return;
+
+    // Mark keys as validating immediately
+    idsToValidate.forEach(id => {
+      updateKeyLocally(id, { status: 'validating' });
+    });
+
+    await validateKeys(idsToValidate, {
+      onProgress: handleValidationProgress,
+      onComplete: () => {
+        refetch();
+      },
+    });
+  }, [keys, validateKeys, updateKeyLocally, handleValidationProgress, refetch]);
+
   // Handlers
   const handleAddKey = useCallback(async (data: {
     key?: string;
@@ -90,19 +123,24 @@ export function KeyPulseApp() {
   }) => {
     if (data.key) {
       try {
-        await addKeys([{
+        const created = await addKeys([{
           key: data.key,
           providerId: data.providerId,
           proxyId: data.proxyId,
         }]);
         toast.success('Added successfully');
-        refetch();
+        await refetch();
+        // Auto-validate the newly added key
+        if (created && created.length > 0) {
+          const newKeyIds = created.map((k: { id: string }) => k.id);
+          handleValidate(newKeyIds);
+        }
       } catch (error) {
         toast.error('Failed to add', { description: error instanceof Error ? error.message : 'Unknown error' });
         throw error;
       }
     }
-  }, [addKeys, refetch]);
+  }, [addKeys, refetch, handleValidate]);
 
   const handleEditKey = useCallback(async (data: {
     key?: string;
@@ -130,14 +168,19 @@ export function KeyPulseApp() {
     proxyId?: string | null;
   }>) => {
     try {
-      await addKeys(keysToAdd);
+      const created = await addKeys(keysToAdd);
       toast.success(`Successfully added ${keysToAdd.length} keys`);
-      refetch();
+      await refetch();
+      // Auto-validate the newly added keys
+      if (created && created.length > 0) {
+        const newKeyIds = created.map((k: { id: string }) => k.id);
+        handleValidate(newKeyIds);
+      }
     } catch (error) {
       toast.error('Batch add failed', { description: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
-  }, [addKeys, refetch]);
+  }, [addKeys, refetch, handleValidate]);
 
   const handleBatchEdit = useCallback(async (updates: {
     providerId?: string;
@@ -170,15 +213,6 @@ export function KeyPulseApp() {
     }
     setPendingDeleteIds([]);
   }, [pendingDeleteIds, deleteKeys, refetch]);
-
-  const handleValidate = useCallback(async (ids: string[]) => {
-    const idsToValidate = ids.length > 0 ? ids : keys.map(k => k.id);
-    if (idsToValidate.length === 0) return;
-
-    await validateKeys(idsToValidate, () => {
-      refetch();
-    });
-  }, [keys, validateKeys, refetch]);
 
   const handleEdit = useCallback((key: ApiKeyWithRelations) => {
     setEditingKey(key);

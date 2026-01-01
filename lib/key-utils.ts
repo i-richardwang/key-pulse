@@ -1,61 +1,42 @@
 /**
- * Key 处理工具函数
+ * Key handling utility functions
  */
 
 /**
- * Key 脱敏处理
- * 只显示前8位和后4位，中间用...代替
+ * Mask a key for display
+ * Shows first 10 and last 6 characters, with 8 asterisks in between
  */
 export function maskKey(key: string): string {
   const trimmed = key.trim();
-  if (trimmed.length <= 12) {
-    return '****';
+  if (trimmed.length <= 16) {
+    return '********';
   }
-  return `${trimmed.slice(0, 8)}...${trimmed.slice(-4)}`;
+  return `${trimmed.slice(0, 10)}********${trimmed.slice(-6)}`;
 }
 
 /**
- * 解析用户输入的 Keys
- * 支持多行输入，自动去重、去空行、去首尾空格
+ * Parse user input keys
+ * Supports newlines and commas, auto-trims, filters comments
  */
 export function parseKeys(input: string): string[] {
-  const lines = input.split('\n');
-  const keys = new Set<string>();
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    // 跳过空行和注释行
-    if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('//')) {
-      keys.add(trimmed);
-    }
-  }
-
-  return Array.from(keys);
+  return input
+    .split(/[\n,]/)
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#') && !line.startsWith('//'));
 }
 
 /**
- * 验证 Key 格式
- * OpenAI Key 通常以 sk- 开头，长度在 40-60 之间
- * 但也支持其他格式的 Key
- */
-export function validateKeyFormat(key: string): boolean {
-  const trimmed = key.trim();
-  // 基本验证：非空且长度合理
-  return trimmed.length >= 10 && trimmed.length <= 200;
-}
-
-/**
- * 生成唯一 ID
+ * Generate unique ID
  */
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**
- * 格式化时间戳为本地时间字符串
+ * Format timestamp to local time string
  */
 export function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('zh-CN', {
+  return new Date(timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -63,29 +44,14 @@ export function formatTimestamp(timestamp: number): string {
 }
 
 /**
- * 格式化持续时间
- */
-export function formatDuration(ms: number): string {
-  if (ms < 1000) {
-    return `${ms}ms`;
-  }
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
-  }
-  return `${seconds}s`;
-}
-
-/**
- * 复制文本到剪贴板
+ * Copy text to clipboard
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    // 降级方案
+    // Fallback
     try {
       const textArea = document.createElement('textarea');
       textArea.value = text;

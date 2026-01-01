@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { keyIds } = body as { keyIds: string[] };
 
-    // 验证请求
+    // Validate request
     if (!keyIds || !Array.isArray(keyIds) || keyIds.length === 0) {
       return new Response(JSON.stringify({ error: 'No key IDs provided' }), {
         status: 400,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 从数据库获取 keys 及其关联的 provider 和 proxy
+    // Fetch keys with associated provider and proxy from database
     const keys = await db
       .select({
         id: apiKeys.id,
@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 创建 AbortController 用于处理客户端断开
+    // Create AbortController for handling client disconnect
     const abortController = new AbortController();
 
-    // 创建 SSE 流
+    // Create SSE stream
     const stream = new ReadableStream({
       async start(controller) {
         const startTime = Date.now();
@@ -101,11 +101,11 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          // 逐个验证
+          // Validate each key
           for (let i = 0; i < keys.length; i++) {
             const keyRecord = keys[i];
 
-            // 检查是否已中止
+            // Check if aborted
             if (abortController.signal.aborted) {
               break;
             }
@@ -134,10 +134,10 @@ export async function POST(request: NextRequest) {
               } : null,
             };
 
-            // 验证 key
+            // Validate key
             const result = await validateSingleKey(keyRecord.key, config, abortController.signal);
 
-            // 更新数据库
+            // Update database
             await db.update(apiKeys)
               .set({
                 status: result.status,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
               })
               .where(eq(apiKeys.id, keyRecord.id));
 
-            // 更新统计
+            // Update stats
             switch (result.status) {
               case 'valid':
                 summary.valid++;
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
                 summary.error++;
             }
 
-            // 发送进度事件 (使用 keyId 而非 index)
+            // Send progress event
             sendEvent(controller, {
               type: 'progress',
               index: i,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
         controller.close();
       },
       cancel() {
-        // 客户端断开连接时中止验证
+        // Client disconnected, abort validation
         abortController.abort();
       },
     });

@@ -97,12 +97,20 @@ export function useKeys(options: UseKeysOptions = {}) {
     fetchKeys();
   }, [fetchKeys]);
 
+  // Update a single key's data locally (for real-time validation updates)
+  const updateKeyLocally = useCallback((keyId: string, updates: Partial<ApiKeyWithRelations>) => {
+    setData(prev => prev.map(key =>
+      key.id === keyId ? { ...key, ...updates } : key
+    ));
+  }, []);
+
   return {
     data,
     pagination,
     isLoading,
     error,
     refetch: fetchKeys,
+    updateKeyLocally,
   };
 }
 
@@ -219,13 +227,26 @@ export function useDeleteKeys() {
   return { deleteKeys, isLoading, error };
 }
 
+export interface ValidationProgressResult {
+  keyId: string;
+  status: string;
+  responseTime?: number;
+  errorMessage?: string;
+  lastValidatedAt: string;
+}
+
+export interface ValidateKeysCallbacks {
+  onProgress?: (result: ValidationProgressResult) => void;
+  onComplete?: () => void;
+}
+
 export function useValidateKeys() {
   const [isValidating, setIsValidating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const validateKeys = useCallback(async (keyIds: string[], onComplete?: () => void) => {
+  const validateKeys = useCallback(async (keyIds: string[], callbacks?: ValidateKeysCallbacks) => {
     setIsValidating(true);
     setProgress(0);
     setTotal(0);
@@ -271,9 +292,19 @@ export function useValidateKeys() {
                   break;
                 case 'progress':
                   setProgress(event.index + 1);
+                  // Call onProgress with the validation result
+                  if (callbacks?.onProgress && event.result.keyId) {
+                    callbacks.onProgress({
+                      keyId: event.result.keyId,
+                      status: event.result.status,
+                      responseTime: event.result.responseTime,
+                      errorMessage: event.result.errorMessage,
+                      lastValidatedAt: new Date().toISOString(),
+                    });
+                  }
                   break;
                 case 'complete':
-                  onComplete?.();
+                  callbacks?.onComplete?.();
                   break;
               }
             } catch {

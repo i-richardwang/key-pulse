@@ -98,8 +98,9 @@ export function KeysTable({
                 />
               </TableHead>
               <TableHead className="min-w-[180px]">Key</TableHead>
-              <TableHead className="min-w-[150px]">Provider</TableHead>
-              <TableHead className="min-w-[100px]">Proxy</TableHead>
+              <TableHead className="min-w-[120px]">Provider</TableHead>
+              <TableHead className="min-w-[100px]">Model</TableHead>
+              <TableHead className="min-w-[80px]">Proxy</TableHead>
               <TableHead className="w-[100px]">Status</TableHead>
               <TableHead className="w-[120px]">Validated At</TableHead>
               <TableHead className="w-[80px]">Time</TableHead>
@@ -109,13 +110,13 @@ export function KeysTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   Loading...
                 </TableCell>
               </TableRow>
             ) : keys.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   No data yet. Click &quot;Add&quot; to add API Keys.
                 </TableCell>
               </TableRow>
@@ -132,14 +133,10 @@ export function KeysTable({
                     </TableCell>
                     <TableCell className="font-mono">{key.maskedKey}</TableCell>
                     <TableCell>
-                      {key.provider ? (
-                        <div>
-                          <div className="font-medium">{key.provider.name}</div>
-                          <div className="text-muted-foreground">{key.provider.model}</div>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
+                      {key.provider ? key.provider.name : <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="font-mono text-muted-foreground">
+                      {key.provider ? key.provider.model : '-'}
                     </TableCell>
                     <TableCell>
                       {key.proxy ? (

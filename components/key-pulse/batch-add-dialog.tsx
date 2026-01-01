@@ -21,6 +21,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
 import { useProxies } from '@/hooks/use-proxies';
+import { parseKeys } from '@/lib/key-utils';
 
 interface BatchAddDialogProps {
   open: boolean;
@@ -30,13 +31,6 @@ interface BatchAddDialogProps {
     providerId: string;
     proxyId?: string | null;
   }>) => Promise<void>;
-}
-
-function parseKeys(input: string): string[] {
-  return input
-    .split(/[\n,]/)
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#') && !line.startsWith('//'));
 }
 
 export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogProps) {

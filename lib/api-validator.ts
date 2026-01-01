@@ -1,6 +1,6 @@
 /**
- * API Key 验证核心逻辑
- * 服务端代码，用于验证 API Key 有效性
+ * API Key Validation Core Logic
+ * Server-side code for validating API Key validity
  */
 
 import { SocksProxyAgent } from 'socks-proxy-agent';
@@ -9,7 +9,7 @@ import type { ValidationConfig, ValidationResult, ValidationStatus, ProxyConfig 
 import { maskKey } from './key-utils';
 
 /**
- * 创建代理 Agent
+ * Create proxy agent
  */
 function createProxyAgent(proxy: ProxyConfig | null) {
   if (!proxy) return undefined;
@@ -26,10 +26,10 @@ function createProxyAgent(proxy: ProxyConfig | null) {
 }
 
 /**
- * 根据错误和状态码分类错误类型
+ * Classify error type based on error and status code
  */
 function classifyError(error: unknown, statusCode?: number): ValidationStatus {
-  // HTTP 状态码分类
+  // HTTP status code classification
   if (statusCode === 401 || statusCode === 403) {
     return 'invalid';
   }
@@ -37,7 +37,7 @@ function classifyError(error: unknown, statusCode?: number): ValidationStatus {
     return 'rate_limited';
   }
 
-  // 错误类型分类
+  // Error type classification
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     if (message.includes('timeout') || message.includes('timed out') || message.includes('aborted')) {
@@ -52,7 +52,7 @@ function classifyError(error: unknown, statusCode?: number): ValidationStatus {
 }
 
 /**
- * 从错误响应中提取错误信息
+ * Extract error message from response
  */
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
@@ -70,7 +70,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
 }
 
 /**
- * 验证单个 API Key
+ * Validate a single API Key
  */
 export async function validateSingleKey(
   key: string,
@@ -81,14 +81,14 @@ export async function validateSingleKey(
   const maskedKey = maskKey(key);
 
   try {
-    // 创建代理 agent
+    // Create proxy agent
     const agent = createProxyAgent(config.proxy);
 
-    // 构建请求 URL
+    // Build request URL
     const baseUrl = config.baseUrl.replace(/\/$/, '');
     const url = `${baseUrl}/v1/chat/completions`;
 
-    // 构建请求体
+    // Build request body
     const requestBody = {
       model: config.model,
       messages: [
@@ -97,16 +97,16 @@ export async function validateSingleKey(
       max_tokens: 20,
     };
 
-    // 创建超时信号
+    // Create timeout signal
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), config.timeout);
 
-    // 合并外部信号和超时信号
+    // Combine external signal and timeout signal
     const combinedSignal = signal
       ? AbortSignal.any([signal, timeoutController.signal])
       : timeoutController.signal;
 
-    // 发送请求
+    // Send request
     const fetchOptions: RequestInit & { agent?: unknown } = {
       method: 'POST',
       headers: {
@@ -117,7 +117,7 @@ export async function validateSingleKey(
       signal: combinedSignal,
     };
 
-    // 如果有代理，添加 agent
+    // Add agent if proxy configured
     if (agent) {
       fetchOptions.agent = agent;
     }
@@ -127,7 +127,7 @@ export async function validateSingleKey(
 
     const responseTime = Date.now() - startTime;
 
-    // 检查响应状态
+    // Check response status
     if (response.ok) {
       const data = await response.json();
       return {
@@ -140,7 +140,7 @@ export async function validateSingleKey(
       };
     }
 
-    // 处理错误响应
+    // Handle error response
     const errorMessage = await extractErrorMessage(response);
     const status = classifyError(null, response.status);
 
@@ -160,24 +160,24 @@ export async function validateSingleKey(
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        // 检查是超时还是用户取消
+        // Check if timeout or user cancelled
         if (responseTime >= config.timeout - 100) {
           return {
             key,
             maskedKey,
             status: 'timeout',
             responseTime,
-            errorMessage: '请求超时',
+            errorMessage: 'Request timeout',
             timestamp: Date.now(),
           };
         }
-        // 用户取消
+        // User cancelled
         return {
           key,
           maskedKey,
           status: 'error',
           responseTime,
-          errorMessage: '请求已取消',
+          errorMessage: 'Request cancelled',
           timestamp: Date.now(),
         };
       }
@@ -196,8 +196,8 @@ export async function validateSingleKey(
 }
 
 /**
- * 并发验证多个 Key
- * 使用信号量控制并发数
+ * Validate multiple keys concurrently
+ * Uses semaphore to control concurrency
  */
 export async function* validateKeys(
   keys: string[],
@@ -206,7 +206,7 @@ export async function* validateKeys(
 ): AsyncGenerator<{ index: number; result: ValidationResult }> {
   const concurrency = Math.max(1, Math.min(10, config.concurrency));
 
-  // 创建任务队列
+  // Create task queue
   let currentIndex = 0;
   const inProgress = new Map<number, Promise<{ index: number; result: ValidationResult }>>();
 
@@ -219,22 +219,22 @@ export async function* validateKeys(
     return promise;
   };
 
-  // 初始化并发任务
+  // Initialize concurrent tasks
   while (currentIndex < keys.length && currentIndex < concurrency) {
     startTask(currentIndex);
     currentIndex++;
   }
 
-  // 处理任务完成
+  // Handle task completion
   while (inProgress.size > 0) {
-    // 等待任意一个任务完成
+    // Wait for any task to complete
     const completed = await Promise.race(inProgress.values());
     inProgress.delete(completed.index);
 
-    // 返回结果
+    // Yield result
     yield completed;
 
-    // 如果还有待处理的 key，启动新任务
+    // If there are pending keys, start new task
     if (currentIndex < keys.length && !signal?.aborted) {
       startTask(currentIndex);
       currentIndex++;
