@@ -72,7 +72,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
 /**
  * Validate a single API Key
  */
-export async function validateSingleKey(
+async function validateSingleKey(
   key: string,
   config: ValidationConfig,
   signal?: AbortSignal
@@ -196,23 +196,36 @@ export async function validateSingleKey(
 }
 
 /**
+ * Validation task with per-key config
+ */
+export interface ValidationTask {
+  keyId: string;
+  key: string;
+  maskedKey: string;
+  config: ValidationConfig;
+}
+
+/**
  * Validate multiple keys concurrently
+ * Each key can have its own config (provider/proxy)
  * Uses semaphore to control concurrency
  */
 export async function* validateKeys(
-  keys: string[],
-  config: ValidationConfig,
+  tasks: ValidationTask[],
+  concurrency: number = 5,
   signal?: AbortSignal
-): AsyncGenerator<{ index: number; result: ValidationResult }> {
-  const concurrency = Math.max(1, Math.min(10, config.concurrency));
+): AsyncGenerator<{ index: number; task: ValidationTask; result: ValidationResult }> {
+  const maxConcurrency = Math.max(1, Math.min(10, concurrency));
 
   // Create task queue
   let currentIndex = 0;
-  const inProgress = new Map<number, Promise<{ index: number; result: ValidationResult }>>();
+  const inProgress = new Map<number, Promise<{ index: number; task: ValidationTask; result: ValidationResult }>>();
 
   const startTask = (index: number) => {
-    const promise = validateSingleKey(keys[index], config, signal).then((result) => ({
+    const task = tasks[index];
+    const promise = validateSingleKey(task.key, task.config, signal).then((result) => ({
       index,
+      task,
       result,
     }));
     inProgress.set(index, promise);
@@ -220,7 +233,7 @@ export async function* validateKeys(
   };
 
   // Initialize concurrent tasks
-  while (currentIndex < keys.length && currentIndex < concurrency) {
+  while (currentIndex < tasks.length && currentIndex < maxConcurrency) {
     startTask(currentIndex);
     currentIndex++;
   }
@@ -234,8 +247,8 @@ export async function* validateKeys(
     // Yield result
     yield completed;
 
-    // If there are pending keys, start new task
-    if (currentIndex < keys.length && !signal?.aborted) {
+    // If there are pending tasks, start new task
+    if (currentIndex < tasks.length && !signal?.aborted) {
       startTask(currentIndex);
       currentIndex++;
     }

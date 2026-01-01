@@ -6,9 +6,12 @@
 import { NextRequest } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray } from 'drizzle-orm';
-import { validateSingleKey } from '@/lib/api-validator';
+import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
+
+// Default concurrency for validation
+const DEFAULT_CONCURRENCY = 5;
 
 function sendEvent(controller: ReadableStreamDefaultController, event: SSEEvent) {
   const data = `data: ${JSON.stringify(event)}\n\n`;
@@ -74,6 +77,40 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Build validation tasks with per-key configs
+    const validTasks: ValidationTask[] = [];
+    const invalidKeyIds: Array<{ id: string; maskedKey: string }> = [];
+
+    for (const keyRecord of keys) {
+      if (!keyRecord.providerBaseUrl || !keyRecord.providerModel) {
+        invalidKeyIds.push({ id: keyRecord.id, maskedKey: keyRecord.maskedKey });
+        continue;
+      }
+
+      const config: ValidationConfig = {
+        baseUrl: keyRecord.providerBaseUrl,
+        model: keyRecord.providerModel,
+        timeout: 30000,
+        concurrency: DEFAULT_CONCURRENCY,
+        proxy: keyRecord.proxyType ? {
+          type: keyRecord.proxyType as 'http' | 'socks5',
+          host: keyRecord.proxyHost!,
+          port: keyRecord.proxyPort!,
+          auth: keyRecord.proxyUsername ? {
+            username: keyRecord.proxyUsername,
+            password: keyRecord.proxyPassword || '',
+          } : undefined,
+        } : null,
+      };
+
+      validTasks.push({
+        keyId: keyRecord.id,
+        key: keyRecord.key,
+        maskedKey: keyRecord.maskedKey,
+        config,
+      });
+    }
+
     // Create AbortController for handling client disconnect
     const abortController = new AbortController();
 
@@ -81,14 +118,16 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const startTime = Date.now();
+        const totalKeys = keys.length;
+        let completedCount = 0;
 
         // Send start event
-        sendEvent(controller, { type: 'start', total: keys.length });
-        sendLog(controller, 'info', `Starting validation of ${keys.length} keys...`);
+        sendEvent(controller, { type: 'start', total: totalKeys });
+        sendLog(controller, 'info', `Starting validation of ${totalKeys} keys (concurrency: ${DEFAULT_CONCURRENCY})...`);
 
         // Initialize stats
         const summary: ValidationSummary = {
-          total: keys.length,
+          total: totalKeys,
           valid: 0,
           invalid: 0,
           rateLimited: 0,
@@ -98,41 +137,20 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          // Validate each key
-          for (let i = 0; i < keys.length; i++) {
-            const keyRecord = keys[i];
+          // Log keys with missing provider config
+          for (const invalid of invalidKeyIds) {
+            completedCount++;
+            summary.error++;
+            sendLog(controller, 'error', `[${completedCount}/${totalKeys}] Key ${invalid.maskedKey} missing Provider config`);
+          }
 
-            // Check if aborted
+          // Run concurrent validation
+          for await (const { task, result } of validateKeys(validTasks, DEFAULT_CONCURRENCY, abortController.signal)) {
             if (abortController.signal.aborted) {
               break;
             }
 
-            // Check if provider exists
-            if (!keyRecord.providerBaseUrl || !keyRecord.providerModel) {
-              sendLog(controller, 'error', `[${i + 1}/${keys.length}] Key ${keyRecord.maskedKey} missing Provider config`);
-              summary.error++;
-              continue;
-            }
-
-            // Build config for this key (from associated provider and proxy)
-            const config: ValidationConfig = {
-              baseUrl: keyRecord.providerBaseUrl,
-              model: keyRecord.providerModel,
-              timeout: 30000,
-              concurrency: 1,
-              proxy: keyRecord.proxyType ? {
-                type: keyRecord.proxyType as 'http' | 'socks5',
-                host: keyRecord.proxyHost!,
-                port: keyRecord.proxyPort!,
-                auth: keyRecord.proxyUsername ? {
-                  username: keyRecord.proxyUsername,
-                  password: keyRecord.proxyPassword || '',
-                } : undefined,
-              } : null,
-            };
-
-            // Validate key
-            const result = await validateSingleKey(keyRecord.key, config, abortController.signal);
+            completedCount++;
 
             // Update database
             await db.update(apiKeys)
@@ -143,7 +161,7 @@ export async function POST(request: NextRequest) {
                 errorMessage: result.errorMessage || null,
                 updatedAt: new Date(),
               })
-              .where(eq(apiKeys.id, keyRecord.id));
+              .where(eq(apiKeys.id, task.keyId));
 
             // Update stats
             switch (result.status) {
@@ -166,10 +184,10 @@ export async function POST(request: NextRequest) {
             // Send progress event
             sendEvent(controller, {
               type: 'progress',
-              index: i,
+              index: completedCount - 1,
               result: {
                 ...result,
-                keyId: keyRecord.id,
+                keyId: task.keyId,
               },
             });
 
@@ -188,7 +206,7 @@ export async function POST(request: NextRequest) {
             sendLog(
               controller,
               logLevel,
-              `[${i + 1}/${keys.length}] ${result.maskedKey}: ${statusText}${
+              `[${completedCount}/${totalKeys}] ${result.maskedKey}: ${statusText}${
                 result.errorMessage ? ` - ${result.errorMessage}` : ''
               }${result.responseTime ? ` (${result.responseTime}ms)` : ''}`
             );

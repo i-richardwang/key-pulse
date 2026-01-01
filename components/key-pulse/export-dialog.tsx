@@ -28,7 +28,6 @@ interface ExportDialogProps {
   onOpenChange: (open: boolean) => void;
   results: ValidationResult[];
   validCount: number;
-  invalidCount: number;
 }
 
 export function ExportDialog({
