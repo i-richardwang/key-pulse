@@ -26,13 +26,13 @@ import {
   ChevronRightIcon,
 } from 'lucide-react';
 import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
-import type { ApiKey } from '@/types';
+import type { ApiKeyWithRelations } from '@/hooks/use-keys';
 
 interface KeysTableProps {
-  keys: ApiKey[];
+  keys: ApiKeyWithRelations[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
-  onEdit: (key: ApiKey) => void;
+  onEdit: (key: ApiKeyWithRelations) => void;
   onDelete: (ids: string[]) => void;
   onValidate: (ids: string[]) => void;
   page: number;
@@ -98,8 +98,8 @@ export function KeysTable({
                 />
               </TableHead>
               <TableHead className="min-w-[180px]">Key</TableHead>
-              <TableHead className="min-w-[200px]">Base URL</TableHead>
-              <TableHead className="min-w-[120px]">Model</TableHead>
+              <TableHead className="min-w-[150px]">Provider</TableHead>
+              <TableHead className="min-w-[100px]">Proxy</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
               <TableHead className="w-[120px]">验证时间</TableHead>
               <TableHead className="w-[80px]">耗时</TableHead>
@@ -131,10 +131,23 @@ export function KeysTable({
                       />
                     </TableCell>
                     <TableCell className="font-mono">{key.maskedKey}</TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-[200px]">
-                      {key.baseUrl}
+                    <TableCell>
+                      {key.provider ? (
+                        <div>
+                          <div className="font-medium">{key.provider.name}</div>
+                          <div className="text-muted-foreground">{key.provider.model}</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
-                    <TableCell>{key.model}</TableCell>
+                    <TableCell>
+                      {key.proxy ? (
+                        <Badge variant="outline">{key.proxy.name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusConfig.variant} className={statusConfig.className}>
                         {statusConfig.label}

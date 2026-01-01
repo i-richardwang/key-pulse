@@ -10,71 +10,62 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import {
-  ProxyConfigForm,
-  getDefaultProxyConfig,
-  proxyConfigFromRecord,
-  proxyConfigToApi,
-  type ProxyConfig,
-} from '@/components/ui/proxy-config-form';
-import {
-  ModelSelector,
-  getFinalModel,
-  initModelState,
-} from '@/components/ui/model-selector';
-import { ENV_CONFIG } from '@/lib/env-config';
-import type { ApiKey } from '@/types';
+import { useProviders } from '@/hooks/use-providers';
+import { useProxies } from '@/hooks/use-proxies';
+import type { ApiKeyWithRelations } from '@/hooks/use-keys';
 
 interface KeyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editKey?: ApiKey | null;
+  editKey?: ApiKeyWithRelations | null;
   onSave: (data: {
     key?: string;
-    baseUrl: string;
-    model: string;
-    proxy?: {
-      type: 'http' | 'socks5';
-      host: string;
-      port: number;
-      username?: string;
-      password?: string;
-    } | null;
+    providerId: string;
+    proxyId?: string | null;
   }) => Promise<void>;
 }
 
 export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProps) {
+  const { data: providers, isLoading: providersLoading } = useProviders();
+  const { data: proxies, isLoading: proxiesLoading } = useProxies();
+
   const [key, setKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
-  const [model, setModel] = useState('');
-  const [customModel, setCustomModel] = useState('');
-  const [proxy, setProxy] = useState<ProxyConfig>(getDefaultProxyConfig());
+  const [providerId, setProviderId] = useState('');
+  const [proxyId, setProxyId] = useState<string>('none');
   const [isLoading, setIsLoading] = useState(false);
 
   const isEditing = !!editKey;
+
+  // Get default provider/proxy
+  const defaultProvider = providers.find(p => p.isDefault);
+  const defaultProxy = proxies.find(p => p.isDefault);
 
   useEffect(() => {
     if (open) {
       if (editKey) {
         // Edit mode: use existing data
         setKey('');
-        setBaseUrl(editKey.baseUrl);
-        const modelState = initModelState(editKey.model);
-        setModel(modelState.selected);
-        setCustomModel(modelState.custom);
-        setProxy(proxyConfigFromRecord(editKey));
+        setProviderId(editKey.providerId);
+        setProxyId(editKey.proxyId || 'none');
       } else {
-        // Add mode: use env defaults
+        // Add mode: use defaults
         setKey('');
-        setBaseUrl(ENV_CONFIG.baseUrl);
-        const modelState = initModelState(ENV_CONFIG.model);
-        setModel(modelState.selected);
-        setCustomModel(modelState.custom);
-        setProxy(getDefaultProxyConfig());
+        setProviderId(defaultProvider?.id || providers[0]?.id || '');
+        setProxyId(defaultProxy?.id || 'none');
       }
     }
-  }, [open, editKey]);
+  }, [open, editKey, providers, proxies, defaultProvider, defaultProxy]);
+
+  const selectedProvider = providers.find(p => p.id === providerId);
+  const selectedProxy = proxyId !== 'none' ? proxies.find(p => p.id === proxyId) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +74,8 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
     try {
       await onSave({
         key: isEditing ? undefined : key,
-        baseUrl,
-        model: getFinalModel(model, customModel),
-        proxy: proxyConfigToApi(proxy),
+        providerId,
+        proxyId: proxyId === 'none' ? null : proxyId,
       });
       onOpenChange(false);
     } catch {
@@ -94,6 +84,8 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
       setIsLoading(false);
     }
   };
+
+  const isFormLoading = providersLoading || proxiesLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,36 +118,80 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
               </Field>
             )}
 
-            {/* Base URL & Model */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="baseUrl">Base URL</FieldLabel>
-                <Input
-                  id="baseUrl"
-                  placeholder="https://api.openai.com"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  required
-                />
-              </Field>
-              <ModelSelector
-                value={model}
-                onChange={setModel}
-                customValue={customModel}
-                onCustomChange={setCustomModel}
-                required
-              />
-            </div>
+            {/* Provider */}
+            <Field>
+              <FieldLabel htmlFor="provider">Provider</FieldLabel>
+              <Select
+                value={providerId}
+                onValueChange={setProviderId}
+                disabled={isFormLoading || providers.length === 0}
+              >
+                <SelectTrigger id="provider">
+                  <SelectValue placeholder={providers.length === 0 ? '请先添加 Provider' : '选择 Provider'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {providers.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.model})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {/* Provider Details */}
+            {selectedProvider && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
+                <div className="text-muted-foreground">
+                  Base URL: <span className="font-mono text-foreground">{selectedProvider.baseUrl}</span>
+                </div>
+                <div className="text-muted-foreground">
+                  Model: <span className="text-foreground">{selectedProvider.model}</span>
+                </div>
+              </div>
+            )}
 
             {/* Proxy */}
-            <ProxyConfigForm value={proxy} onChange={setProxy} />
+            <Field>
+              <FieldLabel htmlFor="proxy">Proxy (可选)</FieldLabel>
+              <Select
+                value={proxyId}
+                onValueChange={setProxyId}
+                disabled={isFormLoading}
+              >
+                <SelectTrigger id="proxy">
+                  <SelectValue placeholder="选择 Proxy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不使用代理</SelectItem>
+                  {proxies.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.host}:{p.port})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {/* Proxy Details */}
+            {selectedProxy && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm">
+                <span className="text-muted-foreground">类型: </span>
+                <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
+                <span className="text-muted-foreground ml-3">地址: </span>
+                <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
+              </div>
+            )}
           </FieldGroup>
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               取消
             </Button>
-            <Button type="submit" disabled={isLoading || (!isEditing && !key)}>
+            <Button
+              type="submit"
+              disabled={isLoading || (!isEditing && !key) || !providerId || providers.length === 0}
+            >
               {isLoading ? '保存中...' : '保存'}
             </Button>
           </DialogFooter>

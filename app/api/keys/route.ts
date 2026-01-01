@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, apiKeys } from '@/db';
+import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray, like, desc, asc, sql, and, SQL } from 'drizzle-orm';
 import { maskKey } from '@/lib/key-utils';
 import type { ApiKeyStatus } from '@/db/schema';
@@ -34,17 +34,60 @@ export async function GET(request: NextRequest) {
       : sortBy === 'updatedAt' ? apiKeys.updatedAt
       : sortBy === 'lastValidatedAt' ? apiKeys.lastValidatedAt
       : sortBy === 'status' ? apiKeys.status
-      : sortBy === 'baseUrl' ? apiKeys.baseUrl
-      : sortBy === 'model' ? apiKeys.model
       : apiKeys.createdAt;
 
-    // Query keys
-    const keys = await db.select()
+    // Query keys with provider and proxy info
+    const keys = await db
+      .select({
+        id: apiKeys.id,
+        key: apiKeys.key,
+        maskedKey: apiKeys.maskedKey,
+        providerId: apiKeys.providerId,
+        proxyId: apiKeys.proxyId,
+        status: apiKeys.status,
+        lastValidatedAt: apiKeys.lastValidatedAt,
+        responseTime: apiKeys.responseTime,
+        errorMessage: apiKeys.errorMessage,
+        createdAt: apiKeys.createdAt,
+        updatedAt: apiKeys.updatedAt,
+        provider: {
+          id: providers.id,
+          name: providers.name,
+          baseUrl: providers.baseUrl,
+          model: providers.model,
+        },
+        proxy: {
+          id: proxies.id,
+          name: proxies.name,
+          type: proxies.type,
+          host: proxies.host,
+          port: proxies.port,
+        },
+      })
       .from(apiKeys)
+      .leftJoin(providers, eq(apiKeys.providerId, providers.id))
+      .leftJoin(proxies, eq(apiKeys.proxyId, proxies.id))
       .where(whereClause)
       .orderBy(sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn))
       .limit(limit)
       .offset(offset);
+
+    // Transform results to handle null proxy
+    const transformedKeys = keys.map(row => ({
+      id: row.id,
+      key: row.key,
+      maskedKey: row.maskedKey,
+      providerId: row.providerId,
+      proxyId: row.proxyId,
+      status: row.status,
+      lastValidatedAt: row.lastValidatedAt,
+      responseTime: row.responseTime,
+      errorMessage: row.errorMessage,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      provider: row.provider?.id ? row.provider : null,
+      proxy: row.proxy?.id ? row.proxy : null,
+    }));
 
     // Get total count
     const countResult = await db.select({ count: sql<number>`count(*)::int` })
@@ -54,7 +97,7 @@ export async function GET(request: NextRequest) {
     const total = countResult[0]?.count || 0;
 
     return NextResponse.json({
-      data: keys,
+      data: transformedKeys,
       pagination: {
         page,
         limit,
@@ -76,34 +119,50 @@ export async function POST(request: NextRequest) {
     // Support both single key and batch
     const keysToAdd: Array<{
       key: string;
-      baseUrl?: string;
-      model?: string;
-      proxy?: {
-        type: 'http' | 'socks5';
-        host: string;
-        port: number;
-        username?: string;
-        password?: string;
-      };
+      providerId: string;
+      proxyId?: string | null;
     }> = Array.isArray(body) ? body : [body];
 
     if (keysToAdd.length === 0) {
       return NextResponse.json({ error: 'No keys provided' }, { status: 400 });
     }
 
-    // Validate and prepare insert data
+    // Validate providerId exists
+    const providerIds = [...new Set(keysToAdd.map(k => k.providerId).filter(Boolean))];
+    if (providerIds.length === 0) {
+      return NextResponse.json({ error: 'providerId is required' }, { status: 400 });
+    }
+
+    const validProviders = await db
+      .select({ id: providers.id })
+      .from(providers)
+      .where(inArray(providers.id, providerIds));
+
+    if (validProviders.length !== providerIds.length) {
+      return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
+    }
+
+    // Validate proxyId if provided
+    const proxyIds = [...new Set(keysToAdd.map(k => k.proxyId).filter(Boolean))] as string[];
+    if (proxyIds.length > 0) {
+      const validProxies = await db
+        .select({ id: proxies.id })
+        .from(proxies)
+        .where(inArray(proxies.id, proxyIds));
+
+      if (validProxies.length !== proxyIds.length) {
+        return NextResponse.json({ error: 'Invalid proxyId' }, { status: 400 });
+      }
+    }
+
+    // Prepare insert data
     const insertData = keysToAdd
-      .filter(item => item.key && item.key.trim())
+      .filter(item => item.key && item.key.trim() && item.providerId)
       .map(item => ({
         key: item.key.trim(),
         maskedKey: maskKey(item.key.trim()),
-        baseUrl: item.baseUrl || process.env.DEFAULT_BASE_URL || 'https://api.openai.com',
-        model: item.model || process.env.DEFAULT_MODEL || 'gpt-3.5-turbo',
-        proxyType: item.proxy?.type || null,
-        proxyHost: item.proxy?.host || null,
-        proxyPort: item.proxy?.port || null,
-        proxyUsername: item.proxy?.username || null,
-        proxyPassword: item.proxy?.password || null,
+        providerId: item.providerId,
+        proxyId: item.proxyId || null,
         status: 'pending' as const,
       }));
 
@@ -135,14 +194,37 @@ export async function PUT(request: NextRequest) {
     }
 
     // Build update data, only include allowed fields
-    const allowedFields = ['baseUrl', 'model', 'proxyType', 'proxyHost', 'proxyPort', 'proxyUsername', 'proxyPassword'];
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        updateData[field] = updates[field];
+    // Validate and set providerId
+    if (updates.providerId !== undefined) {
+      const [provider] = await db
+        .select({ id: providers.id })
+        .from(providers)
+        .where(eq(providers.id, updates.providerId));
+
+      if (!provider) {
+        return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
+      }
+      updateData.providerId = updates.providerId;
+    }
+
+    // Validate and set proxyId
+    if (updates.proxyId !== undefined) {
+      if (updates.proxyId === null) {
+        updateData.proxyId = null;
+      } else {
+        const [proxy] = await db
+          .select({ id: proxies.id })
+          .from(proxies)
+          .where(eq(proxies.id, updates.proxyId));
+
+        if (!proxy) {
+          return NextResponse.json({ error: 'Invalid proxyId' }, { status: 400 });
+        }
+        updateData.proxyId = updates.proxyId;
       }
     }
 

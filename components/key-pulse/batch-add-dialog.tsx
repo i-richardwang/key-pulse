@@ -10,36 +10,25 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import {
-  ProxyConfigForm,
-  getDefaultProxyConfig,
-  proxyConfigToApi,
-  type ProxyConfig,
-} from '@/components/ui/proxy-config-form';
-import {
-  ModelSelector,
-  getFinalModel,
-  initModelState,
-} from '@/components/ui/model-selector';
-import { ENV_CONFIG } from '@/lib/env-config';
+import { useProviders } from '@/hooks/use-providers';
+import { useProxies } from '@/hooks/use-proxies';
 
 interface BatchAddDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (keys: Array<{
     key: string;
-    baseUrl: string;
-    model: string;
-    proxy?: {
-      type: 'http' | 'socks5';
-      host: string;
-      port: number;
-      username?: string;
-      password?: string;
-    };
+    providerId: string;
+    proxyId?: string | null;
   }>) => Promise<void>;
 }
 
@@ -51,26 +40,31 @@ function parseKeys(input: string): string[] {
 }
 
 export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogProps) {
+  const { data: providers, isLoading: providersLoading } = useProviders();
+  const { data: proxies, isLoading: proxiesLoading } = useProxies();
+
   const [rawKeys, setRawKeys] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
-  const [model, setModel] = useState('');
-  const [customModel, setCustomModel] = useState('');
-  const [proxy, setProxy] = useState<ProxyConfig>(getDefaultProxyConfig());
+  const [providerId, setProviderId] = useState('');
+  const [proxyId, setProxyId] = useState<string>('none');
   const [isLoading, setIsLoading] = useState(false);
 
   const parsedKeys = useMemo(() => parseKeys(rawKeys), [rawKeys]);
   const uniqueKeys = useMemo(() => [...new Set(parsedKeys)], [parsedKeys]);
 
+  // Get default provider/proxy
+  const defaultProvider = providers.find(p => p.isDefault);
+  const defaultProxy = proxies.find(p => p.isDefault);
+
   useEffect(() => {
     if (open) {
       setRawKeys('');
-      setBaseUrl(ENV_CONFIG.baseUrl);
-      const modelState = initModelState(ENV_CONFIG.model);
-      setModel(modelState.selected);
-      setCustomModel(modelState.custom);
-      setProxy(getDefaultProxyConfig());
+      setProviderId(defaultProvider?.id || providers[0]?.id || '');
+      setProxyId(defaultProxy?.id || 'none');
     }
-  }, [open]);
+  }, [open, providers, proxies, defaultProvider, defaultProxy]);
+
+  const selectedProvider = providers.find(p => p.id === providerId);
+  const selectedProxy = proxyId !== 'none' ? proxies.find(p => p.id === proxyId) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,14 +73,10 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
     setIsLoading(true);
 
     try {
-      const finalModel = getFinalModel(model, customModel);
-      const proxyData = proxyConfigToApi(proxy);
-
       const keysToAdd = uniqueKeys.map(key => ({
         key,
-        baseUrl,
-        model: finalModel,
-        proxy: proxyData || undefined,
+        providerId,
+        proxyId: proxyId === 'none' ? null : proxyId,
       }));
 
       await onSave(keysToAdd);
@@ -97,6 +87,8 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
       setIsLoading(false);
     }
   };
+
+  const isFormLoading = providersLoading || proxiesLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,34 +122,80 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
               />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="baseUrl">Base URL</FieldLabel>
-                <Input
-                  id="baseUrl"
-                  placeholder="https://api.openai.com"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  required
-                />
-              </Field>
-              <ModelSelector
-                value={model}
-                onChange={setModel}
-                customValue={customModel}
-                onCustomChange={setCustomModel}
-                required
-              />
-            </div>
+            {/* Provider */}
+            <Field>
+              <FieldLabel htmlFor="batch-provider">Provider</FieldLabel>
+              <Select
+                value={providerId}
+                onValueChange={setProviderId}
+                disabled={isFormLoading || providers.length === 0}
+              >
+                <SelectTrigger id="batch-provider">
+                  <SelectValue placeholder={providers.length === 0 ? '请先添加 Provider' : '选择 Provider'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {providers.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.model})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
-            <ProxyConfigForm value={proxy} onChange={setProxy} />
+            {/* Provider Details */}
+            {selectedProvider && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
+                <div className="text-muted-foreground">
+                  Base URL: <span className="font-mono text-foreground">{selectedProvider.baseUrl}</span>
+                </div>
+                <div className="text-muted-foreground">
+                  Model: <span className="text-foreground">{selectedProvider.model}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Proxy */}
+            <Field>
+              <FieldLabel htmlFor="batch-proxy">Proxy (可选)</FieldLabel>
+              <Select
+                value={proxyId}
+                onValueChange={setProxyId}
+                disabled={isFormLoading}
+              >
+                <SelectTrigger id="batch-proxy">
+                  <SelectValue placeholder="选择 Proxy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不使用代理</SelectItem>
+                  {proxies.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.host}:{p.port})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {/* Proxy Details */}
+            {selectedProxy && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm">
+                <span className="text-muted-foreground">类型: </span>
+                <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
+                <span className="text-muted-foreground ml-3">地址: </span>
+                <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
+              </div>
+            )}
           </FieldGroup>
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               取消
             </Button>
-            <Button type="submit" disabled={isLoading || uniqueKeys.length === 0}>
+            <Button
+              type="submit"
+              disabled={isLoading || uniqueKeys.length === 0 || !providerId || providers.length === 0}
+            >
               {isLoading ? '添加中...' : `添加 ${uniqueKeys.length} 个 Key`}
             </Button>
           </DialogFooter>

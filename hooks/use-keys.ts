@@ -1,7 +1,49 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { ApiKey, KeysResponse, SSEEvent } from '@/types';
+import type { SSEEvent } from '@/types';
+
+// Types for the new API structure
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+}
+
+export interface ProxyInfo {
+  id: string;
+  name: string;
+  type: string;
+  host: string;
+  port: number;
+}
+
+export interface ApiKeyWithRelations {
+  id: string;
+  key: string;
+  maskedKey: string;
+  providerId: string;
+  proxyId: string | null;
+  status: string;
+  lastValidatedAt: string | null;
+  responseTime: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+  provider: ProviderInfo | null;
+  proxy: ProxyInfo | null;
+}
+
+interface KeysResponse {
+  data: ApiKeyWithRelations[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 interface UseKeysOptions {
   page?: number;
@@ -13,7 +55,7 @@ interface UseKeysOptions {
 }
 
 export function useKeys(options: UseKeysOptions = {}) {
-  const [data, setData] = useState<ApiKey[]>([]);
+  const [data, setData] = useState<ApiKeyWithRelations[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50,
@@ -71,15 +113,8 @@ export function useAddKeys() {
   const addKeys = useCallback(async (
     keys: Array<{
       key: string;
-      baseUrl?: string;
-      model?: string;
-      proxy?: {
-        type: 'http' | 'socks5';
-        host: string;
-        port: number;
-        username?: string;
-        password?: string;
-      };
+      providerId: string;
+      proxyId?: string | null;
     }>
   ) => {
     setIsLoading(true);
@@ -98,7 +133,7 @@ export function useAddKeys() {
       }
 
       const result = await res.json();
-      return result.data as ApiKey[];
+      return result.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
@@ -118,13 +153,8 @@ export function useUpdateKeys() {
   const updateKeys = useCallback(async (
     ids: string[],
     updates: {
-      baseUrl?: string;
-      model?: string;
-      proxyType?: string | null;
-      proxyHost?: string | null;
-      proxyPort?: number | null;
-      proxyUsername?: string | null;
-      proxyPassword?: string | null;
+      providerId?: string;
+      proxyId?: string | null;
     }
   ) => {
     setIsLoading(true);
@@ -143,7 +173,7 @@ export function useUpdateKeys() {
       }
 
       const result = await res.json();
-      return result.data as ApiKey[];
+      return result.data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);

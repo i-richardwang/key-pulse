@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { KeysTable } from './keys-table';
 import { KeyDialog } from './key-dialog';
@@ -25,6 +26,7 @@ import {
   useUpdateKeys,
   useDeleteKeys,
   useValidateKeys,
+  type ApiKeyWithRelations,
 } from '@/hooks/use-keys';
 import {
   KeyRoundIcon,
@@ -37,8 +39,8 @@ import {
   DownloadIcon,
   LogOutIcon,
   SearchIcon,
+  SettingsIcon,
 } from 'lucide-react';
-import type { ApiKey } from '@/types';
 
 export function KeyPulseApp() {
   const router = useRouter();
@@ -70,7 +72,7 @@ export function KeyPulseApp() {
   const [batchAddDialogOpen, setBatchAddDialogOpen] = useState(false);
   const [batchEditDialogOpen, setBatchEditDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
+  const [editingKey, setEditingKey] = useState<ApiKeyWithRelations | null>(null);
 
   // Delete confirmation dialog
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -83,23 +85,15 @@ export function KeyPulseApp() {
   // Handlers
   const handleAddKey = useCallback(async (data: {
     key?: string;
-    baseUrl: string;
-    model: string;
-    proxy?: {
-      type: 'http' | 'socks5';
-      host: string;
-      port: number;
-      username?: string;
-      password?: string;
-    } | null;
+    providerId: string;
+    proxyId?: string | null;
   }) => {
     if (data.key) {
       try {
         await addKeys([{
           key: data.key,
-          baseUrl: data.baseUrl,
-          model: data.model,
-          proxy: data.proxy || undefined,
+          providerId: data.providerId,
+          proxyId: data.proxyId,
         }]);
         toast.success('添加成功');
         refetch();
@@ -112,26 +106,14 @@ export function KeyPulseApp() {
 
   const handleEditKey = useCallback(async (data: {
     key?: string;
-    baseUrl: string;
-    model: string;
-    proxy?: {
-      type: 'http' | 'socks5';
-      host: string;
-      port: number;
-      username?: string;
-      password?: string;
-    } | null;
+    providerId: string;
+    proxyId?: string | null;
   }) => {
     if (editingKey) {
       try {
         await updateKeys([editingKey.id], {
-          baseUrl: data.baseUrl,
-          model: data.model,
-          proxyType: data.proxy?.type || null,
-          proxyHost: data.proxy?.host || null,
-          proxyPort: data.proxy?.port || null,
-          proxyUsername: data.proxy?.username || null,
-          proxyPassword: data.proxy?.password || null,
+          providerId: data.providerId,
+          proxyId: data.proxyId,
         });
         toast.success('更新成功');
         refetch();
@@ -144,15 +126,8 @@ export function KeyPulseApp() {
 
   const handleBatchAdd = useCallback(async (keysToAdd: Array<{
     key: string;
-    baseUrl: string;
-    model: string;
-    proxy?: {
-      type: 'http' | 'socks5';
-      host: string;
-      port: number;
-      username?: string;
-      password?: string;
-    };
+    providerId: string;
+    proxyId?: string | null;
   }>) => {
     try {
       await addKeys(keysToAdd);
@@ -164,7 +139,10 @@ export function KeyPulseApp() {
     }
   }, [addKeys, refetch]);
 
-  const handleBatchEdit = useCallback(async (updates: Record<string, unknown>) => {
+  const handleBatchEdit = useCallback(async (updates: {
+    providerId?: string;
+    proxyId?: string | null;
+  }) => {
     try {
       await updateKeys(selectedIds, updates);
       toast.success(`成功更新 ${selectedIds.length} 个 Key`);
@@ -202,7 +180,7 @@ export function KeyPulseApp() {
     });
   }, [keys, validateKeys, refetch]);
 
-  const handleEdit = useCallback((key: ApiKey) => {
+  const handleEdit = useCallback((key: ApiKeyWithRelations) => {
     setEditingKey(key);
     setKeyDialogOpen(true);
   }, []);
@@ -222,10 +200,18 @@ export function KeyPulseApp() {
             <KeyRoundIcon className="size-5 text-primary" />
             <span className="font-semibold">KeyPulse</span>
           </div>
-          <Button variant="ghost" onClick={handleLogout}>
-            <LogOutIcon data-icon="inline-start" />
-            登出
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/settings">
+                <SettingsIcon />
+                <span className="sr-only">设置</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" onClick={handleLogout}>
+              <LogOutIcon data-icon="inline-start" />
+              登出
+            </Button>
+          </div>
         </div>
       </header>
 

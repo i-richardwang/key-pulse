@@ -4,7 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { db, apiKeys } from '@/db';
+import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray } from 'drizzle-orm';
 import { validateSingleKey } from '@/lib/api-validator';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
@@ -53,8 +53,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 从数据库获取 keys
-    const keys = await db.select().from(apiKeys).where(inArray(apiKeys.id, keyIds));
+    // 从数据库获取 keys 及其关联的 provider 和 proxy
+    const keys = await db
+      .select({
+        id: apiKeys.id,
+        key: apiKeys.key,
+        maskedKey: apiKeys.maskedKey,
+        providerId: apiKeys.providerId,
+        proxyId: apiKeys.proxyId,
+        // Provider info
+        providerBaseUrl: providers.baseUrl,
+        providerModel: providers.model,
+        // Proxy info
+        proxyType: proxies.type,
+        proxyHost: proxies.host,
+        proxyPort: proxies.port,
+        proxyUsername: proxies.username,
+        proxyPassword: proxies.password,
+      })
+      .from(apiKeys)
+      .leftJoin(providers, eq(apiKeys.providerId, providers.id))
+      .leftJoin(proxies, eq(apiKeys.proxyId, proxies.id))
+      .where(inArray(apiKeys.id, keyIds));
 
     if (keys.length === 0) {
       return new Response(JSON.stringify({ error: 'No keys found' }), {
@@ -96,10 +116,17 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // 构建该 key 的配置
+            // 检查 provider 是否存在
+            if (!keyRecord.providerBaseUrl || !keyRecord.providerModel) {
+              sendLog(controller, 'error', `[${i + 1}/${keys.length}] Key ${keyRecord.maskedKey} 缺少 Provider 配置`);
+              summary.error++;
+              continue;
+            }
+
+            // 构建该 key 的配置（从关联的 provider 和 proxy 获取）
             const config: ValidationConfig = {
-              baseUrl: keyRecord.baseUrl,
-              model: keyRecord.model,
+              baseUrl: keyRecord.providerBaseUrl,
+              model: keyRecord.providerModel,
               timeout: 30000,
               concurrency: 1,
               proxy: keyRecord.proxyType ? {
