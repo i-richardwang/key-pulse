@@ -14,20 +14,3 @@ export function parseKeys(input: string): string[] {
     .map(line => line.trim())
     .filter(line => line && !line.startsWith('#') && !line.startsWith('//'));
 }
-
-export function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}

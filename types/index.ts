@@ -1,9 +1,9 @@
-// Re-export database types
+// Database types
 export type { ApiKey, NewApiKey, ApiKeyStatus, Proxy } from '@/db/schema';
 
-// Import and re-export KeyStatus from constants
-import type { KeyStatus as _KeyStatus } from '@/lib/constants';
-export type KeyStatus = _KeyStatus;
+// UI types (KeyStatus extends ApiKeyStatus with 'validating')
+import type { KeyStatus } from '@/lib/constants';
+export type { KeyStatus };
 
 // Shared API response types
 export interface ProxyInfo {

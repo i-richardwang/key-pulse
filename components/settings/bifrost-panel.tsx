@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { RefreshCwIcon, CheckCircle2Icon, XCircleIcon, AlertCircleIcon, Loader2Icon } from 'lucide-react';
 
 interface SyncStatus {
@@ -27,6 +28,7 @@ export function BifrostPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchStatus();
@@ -142,7 +144,7 @@ BIFROST_DATABASE_URL=postgresql://...`}
           </CardDescription>
           <CardAction>
             <Button
-              onClick={handleSync}
+              onClick={() => setConfirmOpen(true)}
               disabled={!status?.configured || isSyncing}
             >
               {isSyncing ? (
@@ -178,6 +180,16 @@ BIFROST_DATABASE_URL=postgresql://...`}
           </CardContent>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Sync from Bifrost"
+        description="This will replace all existing providers and API keys with data from Bifrost. Any manually added data will be lost. This action cannot be undone."
+        confirmText="Sync"
+        variant="destructive"
+        onConfirm={handleSync}
+      />
     </div>
   );
 }

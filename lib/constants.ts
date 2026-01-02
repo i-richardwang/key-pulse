@@ -1,4 +1,9 @@
-export type KeyStatus = 'pending' | 'valid' | 'invalid' | 'validating' | 'rate_limited' | 'timeout' | 'error';
+import type { ApiKeyStatus } from '@/db/schema';
+
+// KeyStatus extends ApiKeyStatus with UI-only 'validating' state
+// - ApiKeyStatus: Database-persisted states (6 values)
+// - KeyStatus: UI states including transient 'validating' (7 values)
+export type KeyStatus = ApiKeyStatus | 'validating';
 
 export interface StatusConfig {
   label: string;
