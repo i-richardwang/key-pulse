@@ -4,6 +4,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
+import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
 
 const DEFAULT_CONCURRENCY = 5;
 
@@ -187,21 +188,11 @@ export async function POST(request: NextRequest) {
             });
 
             // Send log
-            const statusText = {
-              valid: 'Valid',
-              invalid: 'Invalid',
-              rate_limited: 'Rate Limited',
-              timeout: 'Timeout',
-              error: 'Error',
-              pending: 'Pending',
-              validating: 'Validating',
-            }[result.status];
-
             const logLevel = result.status === 'valid' ? 'info' : 'warn';
             sendLog(
               controller,
               logLevel,
-              `[${completedCount}/${totalKeys}] ${result.maskedKey}: ${statusText}${
+              `[${completedCount}/${totalKeys}] ${result.maskedKey}: ${STATUS_CONFIG[result.status as KeyStatus].label}${
                 result.errorMessage ? ` - ${result.errorMessage}` : ''
               }${result.responseTime ? ` (${result.responseTime}ms)` : ''}`
             );

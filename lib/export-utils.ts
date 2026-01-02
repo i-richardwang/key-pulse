@@ -1,12 +1,5 @@
-/**
- * Export utility functions
- */
-
 import type { ValidationResult, ExportOptions } from '@/types';
 
-/**
- * Filter results by content type
- */
 function filterResults(
   results: ValidationResult[],
   content: ExportOptions['content']
@@ -21,9 +14,6 @@ function filterResults(
   }
 }
 
-/**
- * Export to JSON format
- */
 export function exportToJSON(
   results: ValidationResult[],
   options: ExportOptions
@@ -34,7 +24,6 @@ export function exportToJSON(
     return JSON.stringify(filtered, null, 2);
   }
 
-  // Export only key and status
   return JSON.stringify(
     filtered.map((r) => ({
       key: r.key,
@@ -46,9 +35,6 @@ export function exportToJSON(
   );
 }
 
-/**
- * Export to CSV format
- */
 export function exportToCSV(
   results: ValidationResult[],
   options: ExportOptions
@@ -56,14 +42,7 @@ export function exportToCSV(
   const filtered = filterResults(results, options.content);
 
   if (options.includeDetails) {
-    const headers = [
-      'Key',
-      'Status',
-      'Response Time (ms)',
-      'Error Code',
-      'Error Message',
-      'Timestamp',
-    ];
+    const headers = ['Key', 'Status', 'Response Time (ms)', 'Error Code', 'Error Message', 'Timestamp'];
     const rows = filtered.map((r) => [
       r.key,
       r.status,
@@ -79,7 +58,6 @@ export function exportToCSV(
     ].join('\n');
   }
 
-  // Simple format
   const headers = ['Key', 'Status'];
   const rows = filtered.map((r) => [r.key, r.status]);
 
@@ -89,9 +67,6 @@ export function exportToCSV(
   ].join('\n');
 }
 
-/**
- * Export to TXT format (key list only)
- */
 export function exportToTXT(
   results: ValidationResult[],
   options: ExportOptions
@@ -109,18 +84,10 @@ export function exportToTXT(
       .join('\n');
   }
 
-  // Key list only
   return filtered.map((r) => r.key).join('\n');
 }
 
-/**
- * Download file
- */
-export function downloadFile(
-  content: string,
-  filename: string,
-  mimeType: string
-): void {
+function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
 
@@ -134,9 +101,6 @@ export function downloadFile(
   URL.revokeObjectURL(url);
 }
 
-/**
- * Execute export
- */
 export function exportResults(
   results: ValidationResult[],
   options: ExportOptions

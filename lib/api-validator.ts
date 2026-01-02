@@ -1,16 +1,8 @@
-/**
- * API Key Validation Core Logic
- * Server-side code for validating API Key validity
- */
-
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import type { ValidationConfig, ValidationResult, ValidationStatus, ProxyConfig } from '@/types';
+import type { ValidationConfig, ValidationResult, ProxyConfig, KeyStatus } from '@/types';
 import { maskKey } from './key-utils';
 
-/**
- * Create proxy agent
- */
 function createProxyAgent(proxy: ProxyConfig | null) {
   if (!proxy) return undefined;
 
@@ -25,11 +17,7 @@ function createProxyAgent(proxy: ProxyConfig | null) {
   }
 }
 
-/**
- * Classify error type based on error and status code
- */
-function classifyError(error: unknown, statusCode?: number): ValidationStatus {
-  // HTTP status code classification
+function classifyError(error: unknown, statusCode?: number): KeyStatus {
   if (statusCode === 401 || statusCode === 403) {
     return 'invalid';
   }
@@ -37,41 +25,25 @@ function classifyError(error: unknown, statusCode?: number): ValidationStatus {
     return 'rate_limited';
   }
 
-  // Error type classification
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     if (message.includes('timeout') || message.includes('timed out') || message.includes('aborted')) {
       return 'timeout';
-    }
-    if (message.includes('econnrefused') || message.includes('enotfound')) {
-      return 'error';
     }
   }
 
   return 'error';
 }
 
-/**
- * Extract error message from response
- */
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
     const data = await response.json();
-    if (data.error?.message) {
-      return data.error.message;
-    }
-    if (data.message) {
-      return data.message;
-    }
-    return `HTTP ${response.status}: ${response.statusText}`;
+    return data.error?.message || data.message || `HTTP ${response.status}: ${response.statusText}`;
   } catch {
     return `HTTP ${response.status}: ${response.statusText}`;
   }
 }
 
-/**
- * Validate a single API Key
- */
 async function validateSingleKey(
   key: string,
   config: ValidationConfig,
@@ -81,32 +53,23 @@ async function validateSingleKey(
   const maskedKey = maskKey(key);
 
   try {
-    // Create proxy agent
     const agent = createProxyAgent(config.proxy);
-
-    // Build request URL
     const baseUrl = config.baseUrl.replace(/\/$/, '');
     const url = `${baseUrl}/v1/chat/completions`;
 
-    // Build request body
     const requestBody = {
       model: config.model,
-      messages: [
-        { role: 'user', content: 'Hi' }
-      ],
+      messages: [{ role: 'user', content: 'Hi' }],
       max_tokens: 20,
     };
 
-    // Create timeout signal
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), config.timeout);
 
-    // Combine external signal and timeout signal
     const combinedSignal = signal
       ? AbortSignal.any([signal, timeoutController.signal])
       : timeoutController.signal;
 
-    // Send request
     const fetchOptions: RequestInit & { agent?: unknown } = {
       method: 'POST',
       headers: {
@@ -117,7 +80,6 @@ async function validateSingleKey(
       signal: combinedSignal,
     };
 
-    // Add agent if proxy configured
     if (agent) {
       fetchOptions.agent = agent;
     }
@@ -127,7 +89,6 @@ async function validateSingleKey(
 
     const responseTime = Date.now() - startTime;
 
-    // Check response status
     if (response.ok) {
       const data = await response.json();
       return {
@@ -140,7 +101,6 @@ async function validateSingleKey(
       };
     }
 
-    // Handle error response
     const errorMessage = await extractErrorMessage(response);
     const status = classifyError(null, response.status);
 
@@ -160,24 +120,13 @@ async function validateSingleKey(
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        // Check if timeout or user cancelled
-        if (responseTime >= config.timeout - 100) {
-          return {
-            key,
-            maskedKey,
-            status: 'timeout',
-            responseTime,
-            errorMessage: 'Request timeout',
-            timestamp: Date.now(),
-          };
-        }
-        // User cancelled
+        const isTimeout = responseTime >= config.timeout - 100;
         return {
           key,
           maskedKey,
-          status: 'error',
+          status: isTimeout ? 'timeout' : 'error',
           responseTime,
-          errorMessage: 'Request cancelled',
+          errorMessage: isTimeout ? 'Request timeout' : 'Request cancelled',
           timestamp: Date.now(),
         };
       }
@@ -195,9 +144,6 @@ async function validateSingleKey(
   }
 }
 
-/**
- * Validation task with per-key config
- */
 export interface ValidationTask {
   keyId: string;
   key: string;
@@ -205,19 +151,13 @@ export interface ValidationTask {
   config: ValidationConfig;
 }
 
-/**
- * Validate multiple keys concurrently
- * Each key can have its own config (provider/proxy)
- * Uses semaphore to control concurrency
- */
+// Validate multiple keys concurrently with semaphore-based concurrency control
 export async function* validateKeys(
   tasks: ValidationTask[],
   concurrency: number = 5,
   signal?: AbortSignal
 ): AsyncGenerator<{ index: number; task: ValidationTask; result: ValidationResult }> {
   const maxConcurrency = Math.max(1, Math.min(10, concurrency));
-
-  // Create task queue
   let currentIndex = 0;
   const inProgress = new Map<number, Promise<{ index: number; task: ValidationTask; result: ValidationResult }>>();
 
@@ -232,22 +172,16 @@ export async function* validateKeys(
     return promise;
   };
 
-  // Initialize concurrent tasks
   while (currentIndex < tasks.length && currentIndex < maxConcurrency) {
     startTask(currentIndex);
     currentIndex++;
   }
 
-  // Handle task completion
   while (inProgress.size > 0) {
-    // Wait for any task to complete
     const completed = await Promise.race(inProgress.values());
     inProgress.delete(completed.index);
-
-    // Yield result
     yield completed;
 
-    // If there are pending tasks, start new task
     if (currentIndex < tasks.length && !signal?.aborted) {
       startTask(currentIndex);
       currentIndex++;

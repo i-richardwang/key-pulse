@@ -1,7 +1,3 @@
-/**
- * Shared constants configuration
- */
-
 export type KeyStatus = 'pending' | 'valid' | 'invalid' | 'validating' | 'rate_limited' | 'timeout' | 'error';
 
 export interface StatusConfig {

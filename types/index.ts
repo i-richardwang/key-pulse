@@ -1,29 +1,14 @@
-/**
- * KeyPulse Type Definitions
- */
-
 // Re-export database types
 export type { ApiKey, NewApiKey, ApiKeyStatus } from '@/db/schema';
 
-/**
- * Validation Status
- */
-export type ValidationStatus =
-  | 'pending'
-  | 'validating'
-  | 'valid'
-  | 'invalid'
-  | 'rate_limited'
-  | 'timeout'
-  | 'error';
+// Import and re-export KeyStatus from constants
+import type { KeyStatus as _KeyStatus } from '@/lib/constants';
+export type KeyStatus = _KeyStatus;
 
-/**
- * Validation Result
- */
 export interface ValidationResult {
   key: string;
   maskedKey: string;
-  status: ValidationStatus;
+  status: KeyStatus;
   responseTime?: number;
   errorCode?: string;
   errorMessage?: string;
@@ -32,9 +17,6 @@ export interface ValidationResult {
   keyId?: string;
 }
 
-/**
- * Proxy Configuration
- */
 export interface ProxyConfig {
   type: 'http' | 'socks5';
   host: string;
@@ -45,9 +27,6 @@ export interface ProxyConfig {
   };
 }
 
-/**
- * Validation Configuration
- */
 export interface ValidationConfig {
   baseUrl: string;
   model: string;
@@ -56,47 +35,6 @@ export interface ValidationConfig {
   proxy: ProxyConfig | null;
 }
 
-/**
- * SSE Event Types
- */
-export interface SSEStartEvent {
-  type: 'start';
-  total: number;
-}
-
-export interface SSEProgressEvent {
-  type: 'progress';
-  index: number;
-  result: ValidationResult;
-}
-
-export interface SSECompleteEvent {
-  type: 'complete';
-  summary: ValidationSummary;
-}
-
-export interface SSEErrorEvent {
-  type: 'error';
-  message: string;
-}
-
-export interface SSELogEvent {
-  type: 'log';
-  level: 'info' | 'warn' | 'error';
-  message: string;
-  timestamp: number;
-}
-
-export type SSEEvent =
-  | SSEStartEvent
-  | SSEProgressEvent
-  | SSECompleteEvent
-  | SSEErrorEvent
-  | SSELogEvent;
-
-/**
- * Validation Summary
- */
 export interface ValidationSummary {
   total: number;
   valid: number;
@@ -107,9 +45,14 @@ export interface ValidationSummary {
   duration: number;
 }
 
-/**
- * Export Options
- */
+// SSE event types (union only, individual types not exported)
+export type SSEEvent =
+  | { type: 'start'; total: number }
+  | { type: 'progress'; index: number; result: ValidationResult }
+  | { type: 'complete'; summary: ValidationSummary }
+  | { type: 'error'; message: string }
+  | { type: 'log'; level: 'info' | 'warn' | 'error'; message: string; timestamp: number };
+
 export interface ExportOptions {
   format: 'json' | 'csv' | 'txt';
   content: 'all' | 'valid' | 'invalid';
