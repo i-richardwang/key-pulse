@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, proxies, apiKeys } from '@/db';
+import { db, proxies, providers } from '@/db';
 import { eq, inArray, sql, desc } from 'drizzle-orm';
 import { parseBody } from '@/lib/api-utils';
 import { proxySchema, proxyUpdateSchema, proxyDeleteSchema } from '@/lib/schemas';
@@ -7,7 +7,7 @@ import { proxySchema, proxyUpdateSchema, proxyDeleteSchema } from '@/lib/schemas
 // GET /api/proxies - List all proxies
 export async function GET() {
   try {
-    // Get proxies with key count
+    // Get proxies with provider count (proxy is now at provider level)
     const result = await db
       .select({
         id: proxies.id,
@@ -21,10 +21,10 @@ export async function GET() {
         isDefault: proxies.isDefault,
         createdAt: proxies.createdAt,
         updatedAt: proxies.updatedAt,
-        keyCount: sql<number>`count(${apiKeys.id})::int`,
+        providerCount: sql<number>`count(${providers.id})::int`,
       })
       .from(proxies)
-      .leftJoin(apiKeys, eq(proxies.id, apiKeys.proxyId))
+      .leftJoin(providers, eq(proxies.id, providers.proxyId))
       .groupBy(proxies.id)
       .orderBy(desc(proxies.isDefault), desc(proxies.createdAt));
 
@@ -132,15 +132,15 @@ export async function DELETE(request: NextRequest) {
 
     const { ids } = parsed.data;
 
-    // Check if any proxy has associated keys
-    const keysUsingProxies = await db
+    // Check if any provider is using these proxies
+    const providersUsingProxies = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(apiKeys)
-      .where(inArray(apiKeys.proxyId, ids));
+      .from(providers)
+      .where(inArray(providers.proxyId, ids));
 
-    if (keysUsingProxies[0]?.count > 0) {
+    if (providersUsingProxies[0]?.count > 0) {
       return NextResponse.json(
-        { error: `Cannot delete: ${keysUsingProxies[0].count} keys are using these proxies` },
+        { error: `Cannot delete: ${providersUsingProxies[0].count} providers are using these proxies` },
         { status: 409 }
       );
     }

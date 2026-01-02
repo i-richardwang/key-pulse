@@ -1,30 +1,15 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { SSEEvent } from '@/types';
+import type { SSEEvent, ProxyInfo, ProviderInfo } from '@/types';
 
-// Types for the new API structure
-export interface ProviderInfo {
-  id: string;
-  name: string;
-  baseUrl: string;
-  model: string;
-}
-
-export interface ProxyInfo {
-  id: string;
-  name: string;
-  type: string;
-  host: string;
-  port: number;
-}
+export type { ProxyInfo, ProviderInfo };
 
 export interface ApiKeyWithRelations {
   id: string;
   key: string;
   maskedKey: string;
   providerId: string;
-  proxyId: string | null;
   status: string;
   lastValidatedAt: string | null;
   responseTime: number | null;
@@ -122,7 +107,6 @@ export function useAddKeys() {
     keys: Array<{
       key: string;
       providerId: string;
-      proxyId?: string | null;
     }>
   ) => {
     setIsLoading(true);
@@ -162,7 +146,6 @@ export function useUpdateKeys() {
     ids: string[],
     updates: {
       providerId?: string;
-      proxyId?: string | null;
     }
   ) => {
     setIsLoading(true);

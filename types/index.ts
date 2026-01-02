@@ -1,9 +1,25 @@
 // Re-export database types
-export type { ApiKey, NewApiKey, ApiKeyStatus } from '@/db/schema';
+export type { ApiKey, NewApiKey, ApiKeyStatus, Proxy } from '@/db/schema';
 
 // Import and re-export KeyStatus from constants
 import type { KeyStatus as _KeyStatus } from '@/lib/constants';
 export type KeyStatus = _KeyStatus;
+
+// Shared API response types
+export interface ProxyInfo {
+  id: string;
+  name: string;
+  type: string;
+  host: string;
+  port: number;
+}
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+}
 
 export interface ValidationResult {
   key: string;

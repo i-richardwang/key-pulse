@@ -1,6 +1,14 @@
+export interface BifrostProxyConfig {
+  type: 'none' | 'http' | 'socks5' | 'environment';
+  url?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface BifrostProvider {
   name: string;
   network_config: { base_url?: string };
+  proxy_config?: BifrostProxyConfig;
   status: 'active' | 'error' | 'deleted';
 }
 
@@ -42,4 +50,15 @@ export async function fetchBifrostProviders(): Promise<BifrostProvider[]> {
 export async function fetchBifrostModels(): Promise<BifrostModel[]> {
   const data = await bifrostFetch<{ models: BifrostModel[] }>('/api/models?limit=100');
   return data.models;
+}
+
+// Parse Bifrost proxy URL to host/port
+export function parseProxyUrl(url: string): { host: string; port: number } | null {
+  try {
+    const parsed = new URL(url);
+    const port = parsed.port ? parseInt(parsed.port) : (parsed.protocol === 'https:' ? 443 : 80);
+    return { host: parsed.hostname, port };
+  } catch {
+    return null;
+  }
 }

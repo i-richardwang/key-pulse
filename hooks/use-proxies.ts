@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Proxy } from '@/db/schema';
 
-interface ProxyWithCount extends Proxy {
-  keyCount: number;
+export interface ProxyWithCount extends Proxy {
+  providerCount: number;
 }
 
 export function useProxies() {

@@ -43,18 +43,15 @@ export async function POST(request: NextRequest) {
 
     const { keyIds } = parsed.data;
 
-    // Fetch keys with associated provider and proxy from database
+    // Fetch keys with provider and proxy info (proxy comes from provider)
     const keys = await db
       .select({
         id: apiKeys.id,
         key: apiKeys.key,
         maskedKey: apiKeys.maskedKey,
         providerId: apiKeys.providerId,
-        proxyId: apiKeys.proxyId,
-        // Provider info
         providerBaseUrl: providers.baseUrl,
         providerModel: providers.model,
-        // Proxy info
         proxyType: proxies.type,
         proxyHost: proxies.host,
         proxyPort: proxies.port,
@@ -63,7 +60,7 @@ export async function POST(request: NextRequest) {
       })
       .from(apiKeys)
       .leftJoin(providers, eq(apiKeys.providerId, providers.id))
-      .leftJoin(proxies, eq(apiKeys.proxyId, proxies.id))
+      .leftJoin(proxies, eq(providers.proxyId, proxies.id))
       .where(inArray(apiKeys.id, keyIds));
 
     if (keys.length === 0) {

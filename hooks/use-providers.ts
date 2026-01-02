@@ -2,13 +2,15 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { Provider } from '@/db/schema';
+import type { ProxyInfo } from '@/types';
 
-interface ProviderWithCount extends Provider {
+interface ProviderWithDetails extends Provider {
   keyCount: number;
+  proxy: ProxyInfo | null;
 }
 
 export function useProviders() {
-  const [data, setData] = useState<ProviderWithCount[]>([]);
+  const [data, setData] = useState<ProviderWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

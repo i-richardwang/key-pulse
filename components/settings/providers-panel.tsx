@@ -23,6 +23,7 @@ export function ProvidersPanel() {
             <TableHead>Name</TableHead>
             <TableHead>Base URL</TableHead>
             <TableHead>Model</TableHead>
+            <TableHead>Proxy</TableHead>
             <TableHead className="text-center">Keys</TableHead>
             <TableHead className="text-center">Default</TableHead>
           </TableRow>
@@ -30,13 +31,13 @@ export function ProvidersPanel() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                 Loading...
               </TableCell>
             </TableRow>
           ) : providers.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                 No providers. Sync from Bifrost to import providers.
               </TableCell>
             </TableRow>
@@ -51,11 +52,20 @@ export function ProvidersPanel() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-mono text-muted-foreground">
+                <TableCell className="font-mono text-muted-foreground text-xs">
                   {provider.baseUrl.replace(/^https?:\/\//, '')}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{provider.model}</Badge>
+                </TableCell>
+                <TableCell>
+                  {provider.proxy ? (
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {provider.proxy.host}:{provider.proxy.port}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">None</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   {provider.keyCount}

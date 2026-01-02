@@ -1,12 +1,6 @@
-/**
- * Centralized Zod validation schemas
- */
 import { z } from 'zod';
 
-// ============================================
-// Proxy Schemas
-// ============================================
-
+// Proxy schemas
 export const proxySchema = z.object({
   name: z.string().min(1, { error: 'Name is required' }).max(100),
   type: z.enum(['http', 'socks5'], { error: 'Type must be http or socks5' }),
@@ -34,14 +28,10 @@ export const proxyDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
 });
 
-// ============================================
-// API Key Schemas
-// ============================================
-
+// API Key schemas (proxy is now at provider level, not key level)
 export const keyAddSchema = z.object({
   key: z.string().min(1, { error: 'API Key is required' }),
   providerId: z.uuid({ error: 'Provider is required' }),
-  proxyId: z.uuid().nullable().optional(),
 });
 
 export const keyBatchAddSchema = z.union([
@@ -53,7 +43,6 @@ export const keyUpdateSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
   updates: z.object({
     providerId: z.uuid().optional(),
-    proxyId: z.uuid().nullable().optional(),
   }),
 });
 
@@ -61,18 +50,12 @@ export const keyDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
 });
 
-// ============================================
-// Validation Request Schema
-// ============================================
-
+// Validation request schema
 export const validateRequestSchema = z.object({
   keyIds: z.array(z.uuid()).min(1, { error: 'At least one key ID is required' }).max(1000),
 });
 
-// ============================================
-// Auth Schema
-// ============================================
-
+// Auth schema
 export const loginSchema = z.object({
   password: z.string().min(1, { error: 'Password is required' }),
 });

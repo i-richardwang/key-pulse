@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/select';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
-import { useProxies } from '@/hooks/use-proxies';
 import { parseKeys } from '@/lib/key-utils';
 import { keyAddSchema } from '@/lib/schemas';
 import { toast } from 'sonner';
@@ -32,47 +31,35 @@ interface BatchAddDialogProps {
   onSave: (keys: Array<{
     key: string;
     providerId: string;
-    proxyId?: string | null;
   }>) => Promise<void>;
 }
 
 export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogProps) {
   const { data: providers, isLoading: providersLoading } = useProviders();
-  const { data: proxies, isLoading: proxiesLoading } = useProxies();
 
   const [rawKeys, setRawKeys] = useState('');
   const [providerId, setProviderId] = useState('');
-  const [proxyId, setProxyId] = useState<string>('none');
   const [isLoading, setIsLoading] = useState(false);
 
   const parsedKeys = useMemo(() => parseKeys(rawKeys), [rawKeys]);
   const uniqueKeys = useMemo(() => [...new Set(parsedKeys)], [parsedKeys]);
 
-  // Get default provider/proxy
   const defaultProvider = providers.find(p => p.isDefault);
-  const defaultProxy = proxies.find(p => p.isDefault);
 
   useEffect(() => {
     if (open) {
       setRawKeys('');
       setProviderId(defaultProvider?.id || providers[0]?.id || '');
-      setProxyId(defaultProxy?.id || 'none');
     }
-  }, [open, providers, proxies, defaultProvider, defaultProxy]);
+  }, [open, providers, defaultProvider]);
 
   const selectedProvider = providers.find(p => p.id === providerId);
-  const selectedProxy = proxyId !== 'none' ? proxies.find(p => p.id === proxyId) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (uniqueKeys.length === 0) return;
 
-    // Validate all keys with Zod
-    const keysToAdd = uniqueKeys.map(key => ({
-      key,
-      providerId,
-      proxyId: proxyId === 'none' ? null : proxyId,
-    }));
+    const keysToAdd = uniqueKeys.map(key => ({ key, providerId }));
 
     const batchSchema = z.array(keyAddSchema).min(1).max(1000);
     const result = batchSchema.safeParse(keysToAdd);
@@ -93,8 +80,6 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
       setIsLoading(false);
     }
   };
-
-  const isFormLoading = providersLoading || proxiesLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,13 +113,12 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
               />
             </Field>
 
-            {/* Provider */}
             <Field>
               <FieldLabel htmlFor="batch-provider">Provider</FieldLabel>
               <Select
                 value={providerId}
                 onValueChange={setProviderId}
-                disabled={isFormLoading || providers.length === 0}
+                disabled={providersLoading || providers.length === 0}
               >
                 <SelectTrigger id="batch-provider">
                   <SelectValue placeholder={providers.length === 0 ? 'Add a Provider first' : 'Select Provider'} />
@@ -149,7 +133,6 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
               </Select>
             </Field>
 
-            {/* Provider Details */}
             {selectedProvider && (
               <div className="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
                 <div className="text-muted-foreground">
@@ -158,38 +141,13 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
                 <div className="text-muted-foreground">
                   Model: <span className="text-foreground">{selectedProvider.model}</span>
                 </div>
-              </div>
-            )}
-
-            {/* Proxy */}
-            <Field>
-              <FieldLabel htmlFor="batch-proxy">Proxy (optional)</FieldLabel>
-              <Select
-                value={proxyId}
-                onValueChange={setProxyId}
-                disabled={isFormLoading}
-              >
-                <SelectTrigger id="batch-proxy">
-                  <SelectValue placeholder="Select Proxy" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Proxy</SelectItem>
-                  {proxies.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.host}:{p.port})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            {/* Proxy Details */}
-            {selectedProxy && (
-              <div className="rounded-md bg-muted px-3 py-2 text-sm">
-                <span className="text-muted-foreground">Type: </span>
-                <span className="font-mono">{selectedProxy.type.toUpperCase()}</span>
-                <span className="text-muted-foreground ml-3">Address: </span>
-                <span className="font-mono">{selectedProxy.host}:{selectedProxy.port}</span>
+                <div className="text-muted-foreground">
+                  Proxy: <span className="text-foreground">
+                    {selectedProvider.proxy
+                      ? `${selectedProvider.proxy.host}:${selectedProvider.proxy.port}`
+                      : 'None'}
+                  </span>
+                </div>
               </div>
             )}
           </FieldGroup>

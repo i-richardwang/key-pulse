@@ -118,14 +118,12 @@ export function KeyPulseApp() {
   const handleAddKey = useCallback(async (data: {
     key?: string;
     providerId: string;
-    proxyId?: string | null;
   }) => {
     if (data.key) {
       try {
         const created = await addKeys([{
           key: data.key,
           providerId: data.providerId,
-          proxyId: data.proxyId,
         }]);
         toast.success('Added successfully');
         await refetch();
@@ -144,13 +142,11 @@ export function KeyPulseApp() {
   const handleEditKey = useCallback(async (data: {
     key?: string;
     providerId: string;
-    proxyId?: string | null;
   }) => {
     if (editingKey) {
       try {
         await updateKeys([editingKey.id], {
           providerId: data.providerId,
-          proxyId: data.proxyId,
         });
         toast.success('Updated successfully');
         refetch();
@@ -164,7 +160,6 @@ export function KeyPulseApp() {
   const handleBatchAdd = useCallback(async (keysToAdd: Array<{
     key: string;
     providerId: string;
-    proxyId?: string | null;
   }>) => {
     try {
       const created = await addKeys(keysToAdd);
@@ -183,7 +178,6 @@ export function KeyPulseApp() {
 
   const handleBatchEdit = useCallback(async (updates: {
     providerId?: string;
-    proxyId?: string | null;
   }) => {
     try {
       await updateKeys(selectedIds, updates);

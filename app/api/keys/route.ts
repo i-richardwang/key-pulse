@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * limit;
 
-    // Build conditions
     const conditions: SQL[] = [];
     if (status) {
       conditions.push(eq(apiKeys.status, status));
@@ -31,21 +30,19 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Get sort column
     const sortColumn = sortBy === 'createdAt' ? apiKeys.createdAt
       : sortBy === 'updatedAt' ? apiKeys.updatedAt
       : sortBy === 'lastValidatedAt' ? apiKeys.lastValidatedAt
       : sortBy === 'status' ? apiKeys.status
       : apiKeys.createdAt;
 
-    // Query keys with provider and proxy info
+    // Query keys with provider and proxy info (proxy comes from provider)
     const keys = await db
       .select({
         id: apiKeys.id,
         key: apiKeys.key,
         maskedKey: apiKeys.maskedKey,
         providerId: apiKeys.providerId,
-        proxyId: apiKeys.proxyId,
         status: apiKeys.status,
         lastValidatedAt: apiKeys.lastValidatedAt,
         responseTime: apiKeys.responseTime,
@@ -68,19 +65,17 @@ export async function GET(request: NextRequest) {
       })
       .from(apiKeys)
       .leftJoin(providers, eq(apiKeys.providerId, providers.id))
-      .leftJoin(proxies, eq(apiKeys.proxyId, proxies.id))
+      .leftJoin(proxies, eq(providers.proxyId, proxies.id))
       .where(whereClause)
       .orderBy(sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn))
       .limit(limit)
       .offset(offset);
 
-    // Transform results to handle null proxy
     const transformedKeys = keys.map(row => ({
       id: row.id,
       key: row.key,
       maskedKey: row.maskedKey,
       providerId: row.providerId,
-      proxyId: row.proxyId,
       status: row.status,
       lastValidatedAt: row.lastValidatedAt,
       responseTime: row.responseTime,
@@ -91,7 +86,6 @@ export async function GET(request: NextRequest) {
       proxy: row.proxy?.id ? row.proxy : null,
     }));
 
-    // Get total count
     const countResult = await db.select({ count: sql<number>`count(*)::int` })
       .from(apiKeys)
       .where(whereClause);
@@ -119,7 +113,6 @@ export async function POST(request: NextRequest) {
     const parsed = await parseBody(request, keyBatchAddSchema);
     if ('error' in parsed) return parsed.error;
 
-    // Normalize to array
     const keysToAdd = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
 
     // Validate providerId exists
@@ -134,25 +127,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
     }
 
-    // Validate proxyId if provided
-    const proxyIds = [...new Set(keysToAdd.map(k => k.proxyId).filter(Boolean))] as string[];
-    if (proxyIds.length > 0) {
-      const validProxies = await db
-        .select({ id: proxies.id })
-        .from(proxies)
-        .where(inArray(proxies.id, proxyIds));
-
-      if (validProxies.length !== proxyIds.length) {
-        return NextResponse.json({ error: 'Invalid proxyId' }, { status: 400 });
-      }
-    }
-
-    // Prepare insert data
     const insertData = keysToAdd.map(item => ({
       key: item.key.trim(),
       maskedKey: maskKey(item.key.trim()),
       providerId: item.providerId,
-      proxyId: item.proxyId || null,
       status: 'pending' as const,
     }));
 
@@ -165,7 +143,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/keys - Batch update keys
+// PUT /api/keys - Batch update keys (only providerId now)
 export async function PUT(request: NextRequest) {
   try {
     const parsed = await parseBody(request, keyUpdateSchema);
@@ -173,12 +151,10 @@ export async function PUT(request: NextRequest) {
 
     const { ids, updates } = parsed.data;
 
-    // Build update data, only include allowed fields
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
-    // Validate and set providerId
     if (updates.providerId !== undefined) {
       const [provider] = await db
         .select({ id: providers.id })
@@ -189,23 +165,6 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
       }
       updateData.providerId = updates.providerId;
-    }
-
-    // Validate and set proxyId
-    if (updates.proxyId !== undefined) {
-      if (updates.proxyId === null) {
-        updateData.proxyId = null;
-      } else {
-        const [proxy] = await db
-          .select({ id: proxies.id })
-          .from(proxies)
-          .where(eq(proxies.id, updates.proxyId));
-
-        if (!proxy) {
-          return NextResponse.json({ error: 'Invalid proxyId' }, { status: 400 });
-        }
-        updateData.proxyId = updates.proxyId;
-      }
     }
 
     const updated = await db.update(apiKeys)

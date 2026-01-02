@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, providers, apiKeys, proxies } from '@/db';
-import { eq } from 'drizzle-orm';
-import { fetchBifrostProviders, fetchBifrostModels, isBifrostConfigured } from '@/lib/bifrost-client';
+import { eq, and } from 'drizzle-orm';
+import { fetchBifrostProviders, fetchBifrostModels, isBifrostConfigured, parseProxyUrl } from '@/lib/bifrost-client';
 import { fetchBifrostKeys, isBifrostDbConfigured } from '@/lib/bifrost-db';
 import { maskKey } from '@/lib/key-utils';
 
@@ -30,7 +30,6 @@ export async function POST() {
   }
 
   try {
-    // Fetch data from Bifrost
     const [bifrostProviders, bifrostModels, bifrostKeys] = await Promise.all([
       fetchBifrostProviders(),
       fetchBifrostModels(),
@@ -40,20 +39,12 @@ export async function POST() {
     const modelsByProvider = new Map(bifrostModels.map(m => [m.provider, m.name]));
     const keysByProvider = Map.groupBy(bifrostKeys, k => k.provider);
 
-    // Get default proxy for new keys
-    const [defaultProxy] = await db
-      .select({ id: proxies.id })
-      .from(proxies)
-      .where(eq(proxies.isDefault, true))
-      .limit(1);
-
     // Clear existing data (keys first due to foreign key)
     await db.delete(apiKeys);
     await db.delete(providers);
 
     const stats = { providers: 0, keys: 0, skipped: 0 };
 
-    // Insert providers and keys
     for (const provider of bifrostProviders) {
       const baseUrl = provider.network_config?.base_url;
       const model = modelsByProvider.get(provider.name);
@@ -63,8 +54,52 @@ export async function POST() {
         continue;
       }
 
+      // Find or create proxy for this provider
+      let proxyId: string | null = null;
+      const proxyConfig = provider.proxy_config;
+
+      if (proxyConfig && proxyConfig.type !== 'none' && proxyConfig.url) {
+        const parsed = parseProxyUrl(proxyConfig.url);
+        if (parsed && (proxyConfig.type === 'http' || proxyConfig.type === 'socks5')) {
+          // Check if proxy with same host + port + type exists
+          const [existingProxy] = await db
+            .select({ id: proxies.id })
+            .from(proxies)
+            .where(
+              and(
+                eq(proxies.host, parsed.host),
+                eq(proxies.port, parsed.port),
+                eq(proxies.type, proxyConfig.type)
+              )
+            )
+            .limit(1);
+
+          if (existingProxy) {
+            proxyId = existingProxy.id;
+          } else {
+            // Create new proxy
+            const [newProxy] = await db.insert(proxies)
+              .values({
+                name: `${provider.name} Proxy`,
+                type: proxyConfig.type,
+                host: parsed.host,
+                port: parsed.port,
+                username: proxyConfig.username || null,
+                password: proxyConfig.password || null,
+              })
+              .returning({ id: proxies.id });
+            proxyId = newProxy.id;
+          }
+        }
+      }
+
       const [inserted] = await db.insert(providers)
-        .values({ name: provider.name, baseUrl, model })
+        .values({
+          name: provider.name,
+          baseUrl,
+          model,
+          proxyId,
+        })
         .returning({ id: providers.id });
 
       stats.providers++;
@@ -80,7 +115,6 @@ export async function POST() {
           name: key.name || null,
           bifrostKeyId: key.id,
           providerId: inserted.id,
-          proxyId: defaultProxy?.id || null,
           status: 'pending',
         });
         stats.keys++;

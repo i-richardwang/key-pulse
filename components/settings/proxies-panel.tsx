@@ -19,14 +19,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProxyDialog } from './proxy-dialog';
-import { useProxies, useDeleteProxies } from '@/hooks/use-proxies';
+import { useProxies, useDeleteProxies, type ProxyWithCount } from '@/hooks/use-proxies';
 import { PlusIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, StarIcon, LockIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Proxy } from '@/db/schema';
-
-interface ProxyWithCount extends Proxy {
-  keyCount: number;
-}
 
 export function ProxiesPanel() {
   const { data: proxies, isLoading, refetch } = useProxies();
@@ -89,7 +84,7 @@ export function ProxiesPanel() {
                 <TableHead>Type</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead className="text-center">Auth</TableHead>
-                <TableHead className="text-center">Keys</TableHead>
+                <TableHead className="text-center">Providers</TableHead>
                 <TableHead className="text-center">Default</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
@@ -130,7 +125,7 @@ export function ProxiesPanel() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {proxy.keyCount}
+                      {proxy.providerCount}
                     </TableCell>
                     <TableCell className="text-center">
                       {proxy.isDefault && (
@@ -153,7 +148,7 @@ export function ProxiesPanel() {
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() => handleDeleteClick(proxy)}
-                            disabled={proxy.keyCount > 0}
+                            disabled={proxy.providerCount > 0}
                           >
                             <TrashIcon />
                             Delete
