@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const status = searchParams.get('status') as ApiKeyStatus | null;
+    const providerId = searchParams.get('providerId');
     const search = searchParams.get('search');
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
@@ -24,6 +25,9 @@ export async function GET(request: NextRequest) {
     const conditions: SQL[] = [];
     if (status) {
       conditions.push(eq(apiKeys.status, status));
+    }
+    if (providerId) {
+      conditions.push(eq(apiKeys.providerId, providerId));
     }
     if (search) {
       conditions.push(like(apiKeys.maskedKey, `%${search}%`));

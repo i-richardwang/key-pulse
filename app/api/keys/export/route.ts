@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, apiKeys } from '@/db';
+import { db, apiKeys, providers } from '@/db';
+import { eq, and, like, SQL } from 'drizzle-orm';
 import { decrypt } from '@/lib/crypto';
 import { parseBody } from '@/lib/api-utils';
 import { keyExportSchema } from '@/lib/schemas';
@@ -82,9 +83,21 @@ export async function POST(request: NextRequest) {
     const parsed = await parseBody(request, keyExportSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { format, content, includeDetails } = parsed.data;
+    const { format, content, includeDetails, filters } = parsed.data;
 
-    // Fetch all keys with encrypted key field
+    // Build where clause
+    const conditions: SQL[] = [];
+    if (filters?.status) {
+      conditions.push(eq(apiKeys.status, filters.status as ApiKeyStatus));
+    }
+    if (filters?.providerId) {
+      conditions.push(eq(apiKeys.providerId, filters.providerId));
+    }
+    if (filters?.search) {
+      conditions.push(like(apiKeys.maskedKey, `%${filters.search}%`));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     const keys = await db
       .select({
         key: apiKeys.key,
@@ -93,7 +106,8 @@ export async function POST(request: NextRequest) {
         errorMessage: apiKeys.errorMessage,
         lastValidatedAt: apiKeys.lastValidatedAt,
       })
-      .from(apiKeys);
+      .from(apiKeys)
+      .where(whereClause);
 
     // Decrypt keys and convert to export rows
     const decryptedRows: ExportRow[] = keys.map(row => ({

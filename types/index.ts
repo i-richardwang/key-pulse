@@ -67,8 +67,15 @@ export type SSEEvent =
   | { type: 'error'; message: string }
   | { type: 'log'; level: 'info' | 'warn' | 'error'; message: string; timestamp: number };
 
+export interface KeyFilters {
+  status?: string;
+  providerId?: string;
+  search?: string;
+}
+
 export interface ExportOptions {
   format: 'json' | 'csv' | 'txt';
   content: 'all' | 'valid' | 'invalid';
   includeDetails: boolean;
+  filters?: KeyFilters;
 }

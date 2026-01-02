@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and, like, SQL } from 'drizzle-orm';
 import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import { decrypt } from '@/lib/crypto';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
 import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
+import type { ApiKeyStatus } from '@/db/schema';
 
 const DEFAULT_CONCURRENCY = 5;
 
@@ -42,9 +43,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { keyIds } = parsed.data;
+    const { keyIds, filters } = parsed.data;
 
-    // Fetch keys with provider and proxy info (proxy comes from provider)
+    // Build where clause
+    let whereClause: SQL | undefined;
+    if (keyIds && keyIds.length > 0) {
+      whereClause = inArray(apiKeys.id, keyIds);
+    } else if (filters) {
+      const conditions: SQL[] = [];
+      if (filters.status) {
+        conditions.push(eq(apiKeys.status, filters.status as ApiKeyStatus));
+      }
+      if (filters.providerId) {
+        conditions.push(eq(apiKeys.providerId, filters.providerId));
+      }
+      if (filters.search) {
+        conditions.push(like(apiKeys.maskedKey, `%${filters.search}%`));
+      }
+      if (conditions.length > 0) {
+        whereClause = and(...conditions);
+      }
+    }
+
     const keys = await db
       .select({
         id: apiKeys.id,
@@ -62,7 +82,7 @@ export async function POST(request: NextRequest) {
       .from(apiKeys)
       .leftJoin(providers, eq(apiKeys.providerId, providers.id))
       .leftJoin(proxies, eq(providers.proxyId, proxies.id))
-      .where(inArray(apiKeys.id, keyIds));
+      .where(whereClause);
 
     if (keys.length === 0) {
       return new Response(JSON.stringify({ error: 'No keys found' }), {

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import type { ExportOptions } from '@/types';
+import type { ExportOptions, KeyFilters } from '@/types';
 import { DownloadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +29,7 @@ interface ExportDialogProps {
   totalCount: number;
   validCount: number;
   invalidCount: number;
+  filters: KeyFilters;
 }
 
 export function ExportDialog({
@@ -37,6 +38,7 @@ export function ExportDialog({
   totalCount,
   validCount,
   invalidCount,
+  filters,
 }: ExportDialogProps) {
   const [format, setFormat] = useState<ExportOptions['format']>('txt');
   const [content, setContent] = useState<ExportOptions['content']>('valid');
@@ -50,7 +52,7 @@ export function ExportDialog({
       const response = await fetch('/api/keys/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ format, content, includeDetails }),
+        body: JSON.stringify({ format, content, includeDetails, filters }),
       });
 
       if (!response.ok) {

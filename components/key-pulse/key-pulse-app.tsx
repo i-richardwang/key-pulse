@@ -28,6 +28,8 @@ import {
   useValidateKeys,
   type ApiKeyWithRelations,
 } from '@/hooks/use-keys';
+import { useProviders } from '@/hooks/use-providers';
+import type { KeyFilters } from '@/types';
 import {
   KeyRoundIcon,
   PlusIcon,
@@ -48,14 +50,24 @@ export function KeyPulseApp() {
   // Query state
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [providerFilter, setProviderFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Filters
+  const filters: KeyFilters = useMemo(() => ({
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    providerId: providerFilter === 'all' ? undefined : providerFilter,
+    search: searchQuery || undefined,
+  }), [statusFilter, providerFilter, searchQuery]);
+
+  // Fetch providers for filter dropdown
+  const { data: providers } = useProviders();
 
   // Fetch keys
   const { data: keys, pagination, isLoading, refetch, updateKeyLocally } = useKeys({
     page,
     limit: 50,
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    search: searchQuery || undefined,
+    ...filters,
   });
 
   // Mutations
@@ -99,21 +111,21 @@ export function KeyPulseApp() {
   }, [updateKeyLocally]);
 
   const handleValidate = useCallback(async (ids: string[]) => {
-    const idsToValidate = ids.length > 0 ? ids : keys.map(k => k.id);
-    if (idsToValidate.length === 0) return;
+    const params = ids.length > 0 ? { keyIds: ids } : { filters };
 
-    // Mark keys as validating immediately
-    idsToValidate.forEach(id => {
-      updateKeyLocally(id, { status: 'validating' });
+    // Mark visible keys as validating for UI feedback
+    const keysToMark = ids.length > 0 ? keys.filter(k => ids.includes(k.id)) : keys;
+    keysToMark.forEach(key => {
+      updateKeyLocally(key.id, { status: 'validating' });
     });
 
-    await validateKeys(idsToValidate, {
+    await validateKeys(params, {
       onProgress: handleValidationProgress,
       onComplete: () => {
         refetch();
       },
     });
-  }, [keys, validateKeys, updateKeyLocally, handleValidationProgress, refetch]);
+  }, [filters, keys, validateKeys, updateKeyLocally, handleValidationProgress, refetch]);
 
   // Handlers
   const handleAddKey = useCallback(async (data: {
@@ -302,13 +314,27 @@ export function KeyPulseApp() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="valid">Valid</SelectItem>
                 <SelectItem value="invalid">Invalid</SelectItem>
                 <SelectItem value="rate_limited">Rate Limited</SelectItem>
                 <SelectItem value="timeout">Timeout</SelectItem>
                 <SelectItem value="error">Error</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Providers</SelectItem>
+                {providers.map((provider) => (
+                  <SelectItem key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -387,6 +413,7 @@ export function KeyPulseApp() {
         totalCount={pagination.total}
         validCount={validCount}
         invalidCount={invalidCount}
+        filters={filters}
       />
 
       <ConfirmDialog

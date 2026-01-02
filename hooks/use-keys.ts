@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { SSEEvent, ProxyInfo, ProviderInfo } from '@/types';
+import type { SSEEvent, ProxyInfo, ProviderInfo, KeyFilters } from '@/types';
 
 export type { ProxyInfo, ProviderInfo };
 
@@ -33,6 +33,7 @@ interface UseKeysOptions {
   page?: number;
   limit?: number;
   status?: string;
+  providerId?: string;
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -58,6 +59,7 @@ export function useKeys(options: UseKeysOptions = {}) {
       if (options.page) params.set('page', String(options.page));
       if (options.limit) params.set('limit', String(options.limit));
       if (options.status) params.set('status', options.status);
+      if (options.providerId) params.set('providerId', options.providerId);
       if (options.search) params.set('search', options.search);
       if (options.sortBy) params.set('sortBy', options.sortBy);
       if (options.sortOrder) params.set('sortOrder', options.sortOrder);
@@ -75,7 +77,7 @@ export function useKeys(options: UseKeysOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [options.page, options.limit, options.status, options.search, options.sortBy, options.sortOrder]);
+  }, [options.page, options.limit, options.status, options.providerId, options.search, options.sortBy, options.sortOrder]);
 
   useEffect(() => {
     fetchKeys();
@@ -228,7 +230,10 @@ export function useValidateKeys() {
   const [total, setTotal] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const validateKeys = useCallback(async (keyIds: string[], callbacks?: ValidateKeysCallbacks) => {
+  const validateKeys = useCallback(async (
+    params: { keyIds?: string[]; filters?: KeyFilters },
+    callbacks?: ValidateKeysCallbacks
+  ) => {
     setIsValidating(true);
     setProgress(0);
     setTotal(0);
@@ -239,7 +244,7 @@ export function useValidateKeys() {
       const res = await fetch('/api/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyIds }),
+        body: JSON.stringify(params),
         signal: abortControllerRef.current.signal,
       });
 

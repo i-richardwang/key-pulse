@@ -78,11 +78,21 @@ export const keyExportSchema = z.object({
   format: z.enum(['json', 'csv', 'txt']),
   content: z.enum(['all', 'valid', 'invalid']),
   includeDetails: z.boolean().optional().default(false),
+  filters: z.object({
+    status: z.string().optional(),
+    providerId: z.string().optional(),
+    search: z.string().optional(),
+  }).optional(),
 });
 
 // Validation request schema
 export const validateRequestSchema = z.object({
-  keyIds: z.array(z.uuid()).min(1, { error: 'At least one key ID is required' }).max(1000),
+  keyIds: z.array(z.uuid()).max(1000).optional(),
+  filters: z.object({
+    status: z.string().optional(),
+    providerId: z.string().optional(),
+    search: z.string().optional(),
+  }).optional(),
 });
 
 // Auth schema
