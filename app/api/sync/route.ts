@@ -14,7 +14,7 @@ export async function GET() {
   });
 }
 
-// POST /api/sync - Sync providers and keys from Bifrost (full replace)
+// POST /api/sync - Sync providers and keys from Bifrost
 export async function POST() {
   if (!isBifrostConfigured()) {
     return NextResponse.json(
@@ -39,11 +39,7 @@ export async function POST() {
     const modelsByProvider = new Map(bifrostModels.map(m => [m.provider, m.name]));
     const keysByProvider = Map.groupBy(bifrostKeys, k => k.provider);
 
-    // Clear existing data (keys first due to foreign key)
-    await db.delete(apiKeys);
-    await db.delete(providers);
-
-    const stats = { providers: 0, keys: 0, skipped: 0 };
+    const stats = { providers: 0, keys: 0, skipped: 0, updated: 0 };
 
     for (const provider of bifrostProviders) {
       const baseUrl = provider.network_config?.base_url;
@@ -93,16 +89,45 @@ export async function POST() {
         }
       }
 
-      const [inserted] = await db.insert(providers)
-        .values({
-          name: provider.name,
-          baseUrl,
-          model,
-          proxyId,
-        })
-        .returning({ id: providers.id });
+      // Check if provider with same name exists
+      const [existingProvider] = await db
+        .select({ id: providers.id })
+        .from(providers)
+        .where(eq(providers.name, provider.name))
+        .limit(1);
 
-      stats.providers++;
+      let providerId: string;
+
+      if (existingProvider) {
+        // Update existing provider
+        await db.update(providers)
+          .set({
+            baseUrl,
+            model,
+            proxyId,
+            updatedAt: new Date(),
+          })
+          .where(eq(providers.id, existingProvider.id));
+
+        // Delete existing keys for this provider (will be replaced)
+        await db.delete(apiKeys).where(eq(apiKeys.providerId, existingProvider.id));
+
+        providerId = existingProvider.id;
+        stats.updated++;
+      } else {
+        // Insert new provider
+        const [inserted] = await db.insert(providers)
+          .values({
+            name: provider.name,
+            baseUrl,
+            model,
+            proxyId,
+          })
+          .returning({ id: providers.id });
+
+        providerId = inserted.id;
+        stats.providers++;
+      }
 
       // Insert keys for this provider
       const keys = keysByProvider.get(provider.name) || [];
@@ -114,7 +139,7 @@ export async function POST() {
           maskedKey: maskKey(key.value),
           name: key.name || null,
           bifrostKeyId: key.id,
-          providerId: inserted.id,
+          providerId,
           status: 'pending',
         });
         stats.keys++;
@@ -124,7 +149,7 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       stats,
-      message: `Synced ${stats.providers} providers, ${stats.keys} keys`,
+      message: `Synced ${stats.providers} new, ${stats.updated} updated providers, ${stats.keys} keys`,
     });
   } catch (error) {
     console.error('Bifrost sync error:', error);

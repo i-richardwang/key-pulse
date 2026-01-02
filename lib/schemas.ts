@@ -28,7 +28,31 @@ export const proxyDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
 });
 
-// API Key schemas (proxy is now at provider level, not key level)
+// Provider schemas
+export const providerSchema = z.object({
+  name: z.string().min(1, { error: 'Name is required' }).max(100),
+  baseUrl: z.string().url({ error: 'Invalid URL format' }),
+  model: z.string().min(1, { error: 'Model is required' }),
+  description: z.string().max(500).optional().nullable(),
+  isDefault: z.boolean().optional(),
+  proxyId: z.uuid().optional().nullable(),
+});
+
+export const providerUpdateSchema = z.object({
+  id: z.uuid({ error: 'Invalid provider ID' }),
+  name: z.string().min(1).max(100).optional(),
+  baseUrl: z.string().url().optional(),
+  model: z.string().min(1).optional(),
+  description: z.string().max(500).optional().nullable(),
+  isDefault: z.boolean().optional(),
+  proxyId: z.uuid().optional().nullable(),
+});
+
+export const providerDeleteSchema = z.object({
+  ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
+});
+
+// API Key schemas
 export const keyAddSchema = z.object({
   key: z.string().min(1, { error: 'API Key is required' }),
   providerId: z.uuid({ error: 'Provider is required' }),

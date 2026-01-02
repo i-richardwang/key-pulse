@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db, providers, apiKeys, proxies } from '@/db';
-import { eq, sql, desc } from 'drizzle-orm';
+import { eq, sql, desc, inArray } from 'drizzle-orm';
+import { parseBody } from '@/lib/api-utils';
+import { providerSchema, providerUpdateSchema, providerDeleteSchema } from '@/lib/schemas';
 
-// GET /api/providers - List all providers with proxy info (read-only)
+// GET /api/providers - List all providers with proxy info
 export async function GET() {
   try {
     const result = await db
@@ -40,5 +42,119 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching providers:', error);
     return NextResponse.json({ error: 'Failed to fetch providers' }, { status: 500 });
+  }
+}
+
+// POST /api/providers - Create a new provider
+export async function POST(request: NextRequest) {
+  try {
+    const parsed = await parseBody(request, providerSchema);
+    if ('error' in parsed) return parsed.error;
+
+    const { name, baseUrl, model, description, isDefault, proxyId } = parsed.data;
+
+    // If this is set as default, unset other defaults
+    if (isDefault) {
+      await db.update(providers)
+        .set({ isDefault: false })
+        .where(eq(providers.isDefault, true));
+    }
+
+    const [inserted] = await db.insert(providers)
+      .values({
+        name: name.trim(),
+        baseUrl: baseUrl.trim(),
+        model: model.trim(),
+        description: description?.trim() || null,
+        isDefault: isDefault || false,
+        proxyId: proxyId || null,
+      })
+      .returning();
+
+    return NextResponse.json({ data: inserted }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating provider:', error);
+    if ((error as { code?: string }).code === '23505') {
+      return NextResponse.json({ error: 'Provider name already exists' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to create provider' }, { status: 500 });
+  }
+}
+
+// PUT /api/providers - Update a provider
+export async function PUT(request: NextRequest) {
+  try {
+    const parsed = await parseBody(request, providerUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+
+    const { id, name, baseUrl, model, description, isDefault, proxyId } = parsed.data;
+
+    // Build update data
+    const updateData: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
+
+    if (name !== undefined) updateData.name = name.trim();
+    if (baseUrl !== undefined) updateData.baseUrl = baseUrl.trim();
+    if (model !== undefined) updateData.model = model.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (proxyId !== undefined) updateData.proxyId = proxyId || null;
+
+    // Handle default toggle
+    if (isDefault !== undefined) {
+      if (isDefault) {
+        await db.update(providers)
+          .set({ isDefault: false })
+          .where(eq(providers.isDefault, true));
+      }
+      updateData.isDefault = isDefault;
+    }
+
+    const [updated] = await db.update(providers)
+      .set(updateData)
+      .where(eq(providers.id, id))
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: updated });
+  } catch (error) {
+    console.error('Error updating provider:', error);
+    if ((error as { code?: string }).code === '23505') {
+      return NextResponse.json({ error: 'Provider name already exists' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to update provider' }, { status: 500 });
+  }
+}
+
+// DELETE /api/providers - Delete providers
+export async function DELETE(request: NextRequest) {
+  try {
+    const parsed = await parseBody(request, providerDeleteSchema);
+    if ('error' in parsed) return parsed.error;
+
+    const { ids } = parsed.data;
+
+    // Check if any keys are using these providers
+    const keysUsingProviders = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(apiKeys)
+      .where(inArray(apiKeys.providerId, ids));
+
+    if (keysUsingProviders[0]?.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete: ${keysUsingProviders[0].count} keys are using these providers` },
+        { status: 409 }
+      );
+    }
+
+    await db.delete(providers).where(inArray(providers.id, ids));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting providers:', error);
+    return NextResponse.json({ error: 'Failed to delete providers' }, { status: 500 });
   }
 }

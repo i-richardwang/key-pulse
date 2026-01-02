@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Provider } from '@/db/schema';
 import type { ProxyInfo } from '@/types';
 
-interface ProviderWithDetails extends Provider {
+export interface ProviderWithDetails extends Provider {
   keyCount: number;
   proxy: ProxyInfo | null;
 }
@@ -43,4 +43,120 @@ export function useProviders() {
     error,
     refetch: fetchProviders,
   };
+}
+
+export function useCreateProvider() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createProvider = useCallback(async (data: {
+    name: string;
+    baseUrl: string;
+    model: string;
+    description?: string | null;
+    isDefault?: boolean;
+    proxyId?: string | null;
+  }) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || 'Failed to create provider');
+      }
+
+      const result = await res.json();
+      return result.data as Provider;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { createProvider, isLoading, error };
+}
+
+export function useUpdateProvider() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateProvider = useCallback(async (data: {
+    id: string;
+    name?: string;
+    baseUrl?: string;
+    model?: string;
+    description?: string | null;
+    isDefault?: boolean;
+    proxyId?: string | null;
+  }) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/providers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || 'Failed to update provider');
+      }
+
+      const result = await res.json();
+      return result.data as Provider;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { updateProvider, isLoading, error };
+}
+
+export function useDeleteProviders() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const deleteProviders = useCallback(async (ids: string[]) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/providers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || 'Failed to delete providers');
+      }
+
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { deleteProviders, isLoading, error };
 }
