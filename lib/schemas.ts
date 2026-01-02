@@ -4,31 +4,6 @@
 import { z } from 'zod';
 
 // ============================================
-// Provider Schemas
-// ============================================
-
-export const providerSchema = z.object({
-  name: z.string().min(1, { error: 'Name is required' }).max(100),
-  baseUrl: z.url({ error: 'Must be a valid URL' }),
-  model: z.string().min(1, { error: 'Model is required' }),
-  description: z.string().max(500).optional().nullable(),
-  isDefault: z.boolean().optional(),
-});
-
-export const providerUpdateSchema = z.object({
-  id: z.uuid({ error: 'Invalid provider ID' }),
-  name: z.string().min(1).max(100).optional(),
-  baseUrl: z.url().optional(),
-  model: z.string().min(1).optional(),
-  description: z.string().max(500).optional().nullable(),
-  isDefault: z.boolean().optional(),
-});
-
-export const providerDeleteSchema = z.object({
-  ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
-});
-
-// ============================================
 // Proxy Schemas
 // ============================================
 

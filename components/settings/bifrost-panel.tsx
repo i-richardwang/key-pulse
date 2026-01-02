@@ -15,8 +15,9 @@ interface SyncStatus {
 interface SyncResult {
   success: boolean;
   stats: {
-    providers: { created: number; updated: number; skipped: number };
-    keys: { created: number; updated: number; skipped: number };
+    providers: number;
+    keys: number;
+    skipped: number;
   };
   message: string;
 }
@@ -60,7 +61,7 @@ export function BifrostPanel() {
       const message = err instanceof Error ? err.message : 'Sync failed';
       setLastResult({
         success: false,
-        stats: { providers: { created: 0, updated: 0, skipped: 0 }, keys: { created: 0, updated: 0, skipped: 0 } },
+        stats: { providers: 0, keys: 0, skipped: 0 },
         message,
       });
     } finally {
@@ -166,16 +167,10 @@ BIFROST_DATABASE_URL=postgresql://...`}
                 <span className="font-medium">{lastResult.success ? 'Sync completed' : 'Sync failed'}</span>
               </div>
               {lastResult.success ? (
-                <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                  <div>
-                    Providers: {lastResult.stats.providers.created} created, {lastResult.stats.providers.updated} updated
-                    {lastResult.stats.providers.skipped > 0 && `, ${lastResult.stats.providers.skipped} skipped`}
-                  </div>
-                  <div>
-                    Keys: {lastResult.stats.keys.created} created, {lastResult.stats.keys.updated} updated
-                    {lastResult.stats.keys.skipped > 0 && `, ${lastResult.stats.keys.skipped} skipped`}
-                  </div>
-                </div>
+                <p className="text-muted-foreground">
+                  {lastResult.stats.providers} providers, {lastResult.stats.keys} keys
+                  {lastResult.stats.skipped > 0 && ` (${lastResult.stats.skipped} skipped)`}
+                </p>
               ) : (
                 <p className="text-muted-foreground">{lastResult.message}</p>
               )}
