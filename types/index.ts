@@ -22,14 +22,12 @@ export interface ProviderInfo {
 }
 
 export interface ValidationResult {
-  key: string;
   maskedKey: string;
   status: KeyStatus;
   responseTime?: number;
   errorCode?: string;
   errorMessage?: string;
   timestamp: number;
-  rawResponse?: unknown;
   keyId?: string;
 }
 

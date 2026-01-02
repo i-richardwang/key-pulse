@@ -80,6 +80,7 @@ export function KeyPulseApp() {
 
   // Computed values
   const validCount = useMemo(() => keys.filter(k => k.status === 'valid').length, [keys]);
+  const invalidCount = useMemo(() => keys.filter(k => k.status !== 'valid' && k.status !== 'pending').length, [keys]);
 
   // Real-time validation progress handler
   const handleValidationProgress = useCallback((result: {
@@ -383,15 +384,9 @@ export function KeyPulseApp() {
       <ExportDialog
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
-        results={keys.map(k => ({
-          key: k.key,
-          maskedKey: k.maskedKey,
-          status: k.status as 'valid' | 'invalid' | 'pending' | 'validating' | 'rate_limited' | 'timeout' | 'error',
-          responseTime: k.responseTime || undefined,
-          errorMessage: k.errorMessage || undefined,
-          timestamp: k.lastValidatedAt ? new Date(k.lastValidatedAt).getTime() : Date.now(),
-        }))}
+        totalCount={pagination.total}
         validCount={validCount}
+        invalidCount={invalidCount}
       />
 
       <ConfirmDialog

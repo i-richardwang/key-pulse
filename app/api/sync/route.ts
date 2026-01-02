@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { fetchBifrostProviders, fetchBifrostModels, isBifrostConfigured, parseProxyUrl } from '@/lib/bifrost-client';
 import { fetchBifrostKeys, isBifrostDbConfigured } from '@/lib/bifrost-db';
 import { maskKey } from '@/lib/key-utils';
+import { encrypt } from '@/lib/crypto';
 
 // GET /api/sync - Check Bifrost connection status
 export async function GET() {
@@ -135,7 +136,7 @@ export async function POST() {
         if (!key.value) continue;
 
         await db.insert(apiKeys).values({
-          key: key.value,
+          key: encrypt(key.value),
           maskedKey: maskKey(key.value),
           name: key.name || null,
           bifrostKeyId: key.id,

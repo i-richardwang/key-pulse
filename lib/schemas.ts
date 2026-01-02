@@ -74,6 +74,12 @@ export const keyDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
 });
 
+export const keyExportSchema = z.object({
+  format: z.enum(['json', 'csv', 'txt']),
+  content: z.enum(['all', 'valid', 'invalid']),
+  includeDetails: z.boolean().optional().default(false),
+});
+
 // Validation request schema
 export const validateRequestSchema = z.object({
   keyIds: z.array(z.uuid()).min(1, { error: 'At least one key ID is required' }).max(1000),

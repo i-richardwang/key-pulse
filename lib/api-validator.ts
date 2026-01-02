@@ -1,7 +1,19 @@
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import type { ValidationConfig, ValidationResult, ProxyConfig, KeyStatus } from '@/types';
+import type { ValidationConfig, ProxyConfig, KeyStatus } from '@/types';
 import { maskKey } from './key-utils';
+
+// Internal validation result (includes plaintext key for server-side use)
+interface InternalValidationResult {
+  key: string;
+  maskedKey: string;
+  status: KeyStatus;
+  responseTime?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  timestamp: number;
+  rawResponse?: unknown;
+}
 
 function createProxyAgent(proxy: ProxyConfig | null) {
   if (!proxy) return undefined;
@@ -48,7 +60,7 @@ async function validateSingleKey(
   key: string,
   config: ValidationConfig,
   signal?: AbortSignal
-): Promise<ValidationResult> {
+): Promise<InternalValidationResult> {
   const startTime = Date.now();
   const maskedKey = maskKey(key);
 
@@ -156,10 +168,10 @@ export async function* validateKeys(
   tasks: ValidationTask[],
   concurrency: number = 5,
   signal?: AbortSignal
-): AsyncGenerator<{ index: number; task: ValidationTask; result: ValidationResult }> {
+): AsyncGenerator<{ index: number; task: ValidationTask; result: InternalValidationResult }> {
   const maxConcurrency = Math.max(1, Math.min(10, concurrency));
   let currentIndex = 0;
-  const inProgress = new Map<number, Promise<{ index: number; task: ValidationTask; result: ValidationResult }>>();
+  const inProgress = new Map<number, Promise<{ index: number; task: ValidationTask; result: InternalValidationResult }>>();
 
   const startTask = (index: number) => {
     const task = tasks[index];

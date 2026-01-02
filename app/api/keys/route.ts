@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray, like, desc, asc, sql, and, SQL } from 'drizzle-orm';
 import { maskKey } from '@/lib/key-utils';
+import { encrypt } from '@/lib/crypto';
 import { parseBody } from '@/lib/api-utils';
 import { keyBatchAddSchema, keyUpdateSchema, keyDeleteSchema } from '@/lib/schemas';
 import type { ApiKeyStatus } from '@/db/schema';
@@ -36,11 +37,9 @@ export async function GET(request: NextRequest) {
       : sortBy === 'status' ? apiKeys.status
       : apiKeys.createdAt;
 
-    // Query keys with provider and proxy info (proxy comes from provider)
     const keys = await db
       .select({
         id: apiKeys.id,
-        key: apiKeys.key,
         maskedKey: apiKeys.maskedKey,
         providerId: apiKeys.providerId,
         status: apiKeys.status,
@@ -73,7 +72,6 @@ export async function GET(request: NextRequest) {
 
     const transformedKeys = keys.map(row => ({
       id: row.id,
-      key: row.key,
       maskedKey: row.maskedKey,
       providerId: row.providerId,
       status: row.status,
@@ -127,14 +125,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
     }
 
-    const insertData = keysToAdd.map(item => ({
-      key: item.key.trim(),
-      maskedKey: maskKey(item.key.trim()),
-      providerId: item.providerId,
-      status: 'pending' as const,
-    }));
+    const insertData = keysToAdd.map(item => {
+      const plainKey = item.key.trim();
+      return {
+        key: encrypt(plainKey),
+        maskedKey: maskKey(plainKey),
+        providerId: item.providerId,
+        status: 'pending' as const,
+      };
+    });
 
-    const inserted = await db.insert(apiKeys).values(insertData).returning();
+    const inserted = await db.insert(apiKeys).values(insertData).returning({
+      id: apiKeys.id,
+      maskedKey: apiKeys.maskedKey,
+      providerId: apiKeys.providerId,
+      status: apiKeys.status,
+      createdAt: apiKeys.createdAt,
+    });
 
     return NextResponse.json({ data: inserted }, { status: 201 });
   } catch (error) {
@@ -167,12 +174,11 @@ export async function PUT(request: NextRequest) {
       updateData.providerId = updates.providerId;
     }
 
-    const updated = await db.update(apiKeys)
+    await db.update(apiKeys)
       .set(updateData)
-      .where(inArray(apiKeys.id, ids))
-      .returning();
+      .where(inArray(apiKeys.id, ids));
 
-    return NextResponse.json({ data: updated });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating keys:', error);
     return NextResponse.json({ error: 'Failed to update keys' }, { status: 500 });

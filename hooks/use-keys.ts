@@ -7,7 +7,6 @@ export type { ProxyInfo, ProviderInfo };
 
 export interface ApiKeyWithRelations {
   id: string;
-  key: string;
   maskedKey: string;
   providerId: string;
   status: string;

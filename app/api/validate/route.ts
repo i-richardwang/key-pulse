@@ -3,6 +3,7 @@ import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray } from 'drizzle-orm';
 import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
+import { decrypt } from '@/lib/crypto';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
 import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
 
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
 
       validTasks.push({
         keyId: keyRecord.id,
-        key: keyRecord.key,
+        key: decrypt(keyRecord.key),
         maskedKey: keyRecord.maskedKey,
         config,
       });
@@ -174,12 +175,17 @@ export async function POST(request: NextRequest) {
                 summary.error++;
             }
 
-            // Send progress event
+            // Send progress event (exclude plaintext key for security)
             sendEvent(controller, {
               type: 'progress',
               index: completedCount - 1,
               result: {
-                ...result,
+                maskedKey: result.maskedKey,
+                status: result.status,
+                responseTime: result.responseTime,
+                errorCode: result.errorCode,
+                errorMessage: result.errorMessage,
+                timestamp: result.timestamp,
                 keyId: task.keyId,
               },
             });
