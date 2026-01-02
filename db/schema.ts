@@ -33,6 +33,10 @@ export const apiKeys = pgTable('api_keys', {
   id: uuid('id').defaultRandom().primaryKey(),
   key: text('key').notNull(),                      // Actual API key (plaintext)
   maskedKey: text('masked_key').notNull(),         // Display version (e.g., sk-xxxx...yyyy)
+  name: text('name'),                              // Optional key name (from Bifrost)
+
+  // Bifrost sync
+  bifrostKeyId: text('bifrost_key_id').unique(),   // Link to Bifrost config_keys.key_id
 
   // Foreign key references
   providerId: uuid('provider_id').notNull().references(() => providers.id),

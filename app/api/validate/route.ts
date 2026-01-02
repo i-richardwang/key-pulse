@@ -1,8 +1,3 @@
-/**
- * API Key Validation SSE Endpoint
- * POST /api/validate
- */
-
 import { NextRequest } from 'next/server';
 import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray } from 'drizzle-orm';
@@ -10,7 +5,6 @@ import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
 
-// Default concurrency for validation
 const DEFAULT_CONCURRENCY = 5;
 
 function sendEvent(controller: ReadableStreamDefaultController, event: SSEEvent) {
@@ -31,6 +25,7 @@ function sendLog(
   });
 }
 
+// POST /api/validate - Validate API keys via SSE stream
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

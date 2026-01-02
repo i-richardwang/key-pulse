@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProvidersPanel } from '@/components/settings/providers-panel';
 import { ProxiesPanel } from '@/components/settings/proxies-panel';
-import { ArrowLeftIcon, ServerIcon, GlobeIcon } from 'lucide-react';
+import { BifrostPanel } from '@/components/settings/bifrost-panel';
+import { ArrowLeftIcon, ServerIcon, GlobeIcon, RefreshCwIcon } from 'lucide-react';
 
 export default function SettingsPage() {
   return (
@@ -38,6 +39,10 @@ export default function SettingsPage() {
                 <GlobeIcon className="size-3.5" />
                 Proxies
               </TabsTrigger>
+              <TabsTrigger value="bifrost" className="gap-1.5">
+                <RefreshCwIcon className="size-3.5" />
+                Bifrost
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="providers" className="mt-4">
@@ -46,6 +51,10 @@ export default function SettingsPage() {
 
             <TabsContent value="proxies" className="mt-4">
               <ProxiesPanel />
+            </TabsContent>
+
+            <TabsContent value="bifrost" className="mt-4">
+              <BifrostPanel />
             </TabsContent>
           </Tabs>
         </div>
