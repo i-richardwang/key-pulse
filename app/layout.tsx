@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={jetbrainsMono.variable}>
       <body className="font-mono antialiased">
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
         <Toaster richColors position="top-center" />
       </body>
     </html>

@@ -1,164 +1,143 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Proxy } from '@/db/schema';
 
 export interface ProxyWithCount extends Proxy {
   providerCount: number;
 }
 
+export const proxyQueryKeys = {
+  all: ['proxies'] as const,
+  list: () => [...proxyQueryKeys.all, 'list'] as const,
+};
+
+async function fetchProxies(): Promise<ProxyWithCount[]> {
+  const res = await fetch('/api/proxies');
+  if (!res.ok) throw new Error('Failed to fetch proxies');
+  const result = await res.json();
+  return result.data;
+}
+
 export function useProxies() {
-  const [data, setData] = useState<ProxyWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProxies = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/proxies');
-      if (!res.ok) {
-        throw new Error('Failed to fetch proxies');
-      }
-
-      const result = await res.json();
-      setData(result.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProxies();
-  }, [fetchProxies]);
+  const query = useQuery({
+    queryKey: proxyQueryKeys.list(),
+    queryFn: fetchProxies,
+  });
 
   return {
-    data,
-    isLoading,
-    error,
-    refetch: fetchProxies,
+    data: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
   };
 }
 
+interface CreateProxyInput {
+  name: string;
+  type: 'http' | 'socks5';
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
 export function useCreateProxy() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const createProxy = useCallback(async (data: {
-    name: string;
-    type: 'http' | 'socks5';
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-    description?: string;
-    isDefault?: boolean;
-  }) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const mutation = useMutation({
+    mutationFn: async (data: CreateProxyInput) => {
       const res = await fetch('/api/proxies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
       if (!res.ok) {
         const result = await res.json();
         throw new Error(result.error || 'Failed to create proxy');
       }
-
       const result = await res.json();
       return result.data as Proxy;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: proxyQueryKeys.all });
+    },
+  });
 
-  return { createProxy, isLoading, error };
+  return {
+    createProxy: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error?.message ?? null,
+  };
+}
+
+interface UpdateProxyInput {
+  id: string;
+  name?: string;
+  type?: 'http' | 'socks5';
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  description?: string;
+  isDefault?: boolean;
 }
 
 export function useUpdateProxy() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const updateProxy = useCallback(async (data: {
-    id: string;
-    name?: string;
-    type?: 'http' | 'socks5';
-    host?: string;
-    port?: number;
-    username?: string;
-    password?: string;
-    description?: string;
-    isDefault?: boolean;
-  }) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const mutation = useMutation({
+    mutationFn: async (data: UpdateProxyInput) => {
       const res = await fetch('/api/proxies', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
       if (!res.ok) {
         const result = await res.json();
         throw new Error(result.error || 'Failed to update proxy');
       }
-
       const result = await res.json();
       return result.data as Proxy;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: proxyQueryKeys.all });
+    },
+  });
 
-  return { updateProxy, isLoading, error };
+  return {
+    updateProxy: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error?.message ?? null,
+  };
 }
 
 export function useDeleteProxies() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const deleteProxies = useCallback(async (ids: string[]) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const mutation = useMutation({
+    mutationFn: async (ids: string[]) => {
       const res = await fetch('/api/proxies', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids }),
       });
-
       if (!res.ok) {
         const result = await res.json();
         throw new Error(result.error || 'Failed to delete proxies');
       }
-
       return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: proxyQueryKeys.all });
+    },
+  });
 
-  return { deleteProxies, isLoading, error };
+  return {
+    deleteProxies: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error?.message ?? null,
+  };
 }
