@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { KeysTable } from './keys-table';
 import { KeyDialog } from './key-dialog';
@@ -10,6 +9,7 @@ import { BatchAddDialog } from './batch-add-dialog';
 import { BatchEditDialog } from './batch-edit-dialog';
 import { ExportDialog } from './export-dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { SiteLayout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -31,7 +31,6 @@ import {
 import { useProviders } from '@/hooks/use-providers';
 import type { KeyFilters } from '@/types';
 import {
-  KeyRoundIcon,
   PlusIcon,
   ListPlusIcon,
   PlayIcon,
@@ -39,9 +38,7 @@ import {
   PencilIcon,
   TrashIcon,
   DownloadIcon,
-  LogOutIcon,
   SearchIcon,
-  SettingsIcon,
 } from 'lucide-react';
 
 export function KeyPulseApp() {
@@ -250,34 +247,10 @@ export function KeyPulseApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <KeyRoundIcon className="size-5 text-primary" />
-            <span className="font-semibold">KeyPulse</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/settings">
-                <SettingsIcon />
-                <span className="sr-only">Settings</span>
-              </Link>
-            </Button>
-            <Button variant="ghost" onClick={handleLogout}>
-              <LogOutIcon data-icon="inline-start" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 p-4">
-        <div className="mx-auto max-w-6xl space-y-4">
-          {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-2">
+    <SiteLayout onLogout={handleLogout}>
+      <div className="space-y-4">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
             {/* Add buttons */}
             <Button onClick={() => { setEditingKey(null); setKeyDialogOpen(true); }}>
               <PlusIcon data-icon="inline-start" />
@@ -402,7 +375,6 @@ export function KeyPulseApp() {
             isLoading={isLoading}
           />
         </div>
-      </main>
 
       {/* Dialogs */}
       <KeyDialog
@@ -443,6 +415,6 @@ export function KeyPulseApp() {
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </SiteLayout>
   );
 }

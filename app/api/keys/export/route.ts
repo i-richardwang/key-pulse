@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, apiKeys, providers } from '@/db';
+import { db, apiKeys } from '@/db';
 import { eq, and, like, SQL } from 'drizzle-orm';
 import { decrypt } from '@/lib/crypto';
 import { parseBody } from '@/lib/api-utils';

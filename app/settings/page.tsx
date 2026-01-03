@@ -1,64 +1,52 @@
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProvidersPanel } from '@/components/settings/providers-panel';
 import { ProxiesPanel } from '@/components/settings/proxies-panel';
 import { BifrostPanel } from '@/components/settings/bifrost-panel';
-import { ArrowLeftIcon, ServerIcon, GlobeIcon, RefreshCwIcon } from 'lucide-react';
+import { SiteLayout } from '@/components/layout';
+import { ServerIcon, GlobeIcon, RefreshCwIcon } from 'lucide-react';
 
 export default function SettingsPage() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeftIcon />
-                <span className="sr-only">Back</span>
-              </Button>
-            </Link>
-            <span className="font-semibold">Settings</span>
-          </div>
-        </div>
-      </header>
+    <SiteLayout onLogout={handleLogout}>
+      <Tabs defaultValue="providers">
+        <TabsList>
+          <TabsTrigger value="providers" className="gap-1.5">
+            <ServerIcon className="size-3.5" />
+            Providers
+          </TabsTrigger>
+          <TabsTrigger value="proxies" className="gap-1.5">
+            <GlobeIcon className="size-3.5" />
+            Proxies
+          </TabsTrigger>
+          <TabsTrigger value="bifrost" className="gap-1.5">
+            <RefreshCwIcon className="size-3.5" />
+            Bifrost
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4">
-        <div className="mx-auto max-w-6xl space-y-4">
-          <Tabs defaultValue="providers">
-            <TabsList>
-              <TabsTrigger value="providers" className="gap-1.5">
-                <ServerIcon className="size-3.5" />
-                Providers
-              </TabsTrigger>
-              <TabsTrigger value="proxies" className="gap-1.5">
-                <GlobeIcon className="size-3.5" />
-                Proxies
-              </TabsTrigger>
-              <TabsTrigger value="bifrost" className="gap-1.5">
-                <RefreshCwIcon className="size-3.5" />
-                Bifrost
-              </TabsTrigger>
-            </TabsList>
+        <TabsContent value="providers" className="mt-4">
+          <ProvidersPanel />
+        </TabsContent>
 
-            <TabsContent value="providers" className="mt-4">
-              <ProvidersPanel />
-            </TabsContent>
+        <TabsContent value="proxies" className="mt-4">
+          <ProxiesPanel />
+        </TabsContent>
 
-            <TabsContent value="proxies" className="mt-4">
-              <ProxiesPanel />
-            </TabsContent>
-
-            <TabsContent value="bifrost" className="mt-4">
-              <BifrostPanel />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
-    </div>
+        <TabsContent value="bifrost" className="mt-4">
+          <BifrostPanel />
+        </TabsContent>
+      </Tabs>
+    </SiteLayout>
   );
 }

@@ -124,3 +124,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Restore pointer cursor for clickable elements (Tailwind v4 changed default to cursor: default) */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}

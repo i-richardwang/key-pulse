@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { pgTable, serial, text, boolean, real, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, boolean, real } from 'drizzle-orm/pg-core';
 import { eq, and, isNotNull } from 'drizzle-orm';
 import { Pool } from 'pg';
 
