@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -44,7 +43,6 @@ export function ProxyDialog({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [description, setDescription] = useState('');
-  const [isDefault, setIsDefault] = useState(false);
 
   const { createProxy, isLoading: isCreating } = useCreateProxy();
   const { updateProxy, isLoading: isUpdating } = useUpdateProxy();
@@ -62,7 +60,6 @@ export function ProxyDialog({
         setUsername(editProxy.username || '');
         setPassword(editProxy.password || '');
         setDescription(editProxy.description || '');
-        setIsDefault(editProxy.isDefault || false);
       } else {
         setName('');
         setType('http');
@@ -71,7 +68,6 @@ export function ProxyDialog({
         setUsername('');
         setPassword('');
         setDescription('');
-        setIsDefault(false);
       }
     }
   }, [open, editProxy]);
@@ -90,7 +86,6 @@ export function ProxyDialog({
       username: username || undefined,
       password: password || undefined,
       description: description || undefined,
-      isDefault,
     });
 
     if (!result.success) {
@@ -109,7 +104,6 @@ export function ProxyDialog({
           username: result.data.username ?? undefined,
           password: result.data.password ?? undefined,
           description: result.data.description ?? undefined,
-          isDefault: result.data.isDefault,
         });
         toast.success('Proxy updated');
       } else {
@@ -121,7 +115,6 @@ export function ProxyDialog({
           username: result.data.username ?? undefined,
           password: result.data.password ?? undefined,
           description: result.data.description ?? undefined,
-          isDefault: result.data.isDefault,
         });
         toast.success('Proxy created');
       }
@@ -220,14 +213,6 @@ export function ProxyDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </Field>
-
-            <Field orientation="horizontal">
-              <Switch
-                checked={isDefault}
-                onCheckedChange={setIsDefault}
-              />
-              <FieldLabel>Set as default Proxy</FieldLabel>
             </Field>
           </FieldGroup>
 

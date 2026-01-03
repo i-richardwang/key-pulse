@@ -18,7 +18,6 @@ export async function GET() {
         username: proxies.username,
         password: proxies.password,
         description: proxies.description,
-        isDefault: proxies.isDefault,
         createdAt: proxies.createdAt,
         updatedAt: proxies.updatedAt,
         providerCount: sql<number>`count(${providers.id})::int`,
@@ -26,7 +25,7 @@ export async function GET() {
       .from(proxies)
       .leftJoin(providers, eq(proxies.id, providers.proxyId))
       .groupBy(proxies.id)
-      .orderBy(desc(proxies.isDefault), desc(proxies.createdAt));
+      .orderBy(desc(proxies.createdAt));
 
     return NextResponse.json({ data: result });
   } catch (error) {
@@ -41,14 +40,7 @@ export async function POST(request: NextRequest) {
     const parsed = await parseBody(request, proxySchema);
     if ('error' in parsed) return parsed.error;
 
-    const { name, type, host, port, username, password, description, isDefault } = parsed.data;
-
-    // If this is set as default, unset other defaults
-    if (isDefault) {
-      await db.update(proxies)
-        .set({ isDefault: false })
-        .where(eq(proxies.isDefault, true));
-    }
+    const { name, type, host, port, username, password, description } = parsed.data;
 
     const [inserted] = await db.insert(proxies)
       .values({
@@ -59,7 +51,6 @@ export async function POST(request: NextRequest) {
         username,
         password,
         description,
-        isDefault: isDefault ?? false,
       })
       .returning();
 
@@ -79,18 +70,10 @@ export async function PUT(request: NextRequest) {
     const parsed = await parseBody(request, proxyUpdateSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { id, isDefault, ...data } = parsed.data;
-
-    // Handle default toggle (must run before update)
-    if (isDefault) {
-      await db.update(proxies)
-        .set({ isDefault: false })
-        .where(eq(proxies.isDefault, true));
-    }
+    const { id, ...data } = parsed.data;
 
     const updateData = stripUndefined({
       ...data,
-      isDefault,
       updatedAt: new Date(),
     });
 

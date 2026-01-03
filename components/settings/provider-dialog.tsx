@@ -53,7 +53,6 @@ export function ProviderDialog({
   const [model, setModel] = useState('');
   const [description, setDescription] = useState('');
   const [proxyId, setProxyId] = useState<string>('none');
-  const [isDefault, setIsDefault] = useState(false);
 
   // Bifrost fields
   const [bifrostProviderName, setBifrostProviderName] = useState('');
@@ -86,7 +85,6 @@ export function ProviderDialog({
         setModel(editProvider.model);
         setDescription(editProvider.description || '');
         setProxyId(editProvider.proxyId || 'none');
-        setIsDefault(editProvider.isDefault || false);
         // Bifrost fields
         setBifrostProviderName(editProvider.bifrostProviderName || '');
         setExtraHeadersJson(editProvider.extraHeaders ? JSON.stringify(editProvider.extraHeaders, null, 2) : '');
@@ -107,7 +105,6 @@ export function ProviderDialog({
         setModel('');
         setDescription('');
         setProxyId('none');
-        setIsDefault(false);
         setBifrostProviderName('');
         setExtraHeadersJson('');
         setRequestTimeout(30);
@@ -145,7 +142,6 @@ export function ProviderDialog({
       model,
       description: description || undefined,
       proxyId: proxyId === 'none' ? undefined : proxyId,
-      isDefault,
       bifrostProviderName: bifrostProviderName || undefined,
       extraHeaders,
       requestTimeout,
@@ -173,7 +169,6 @@ export function ProviderDialog({
           model: result.data.model,
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
-          isDefault: result.data.isDefault,
           bifrostProviderName: result.data.bifrostProviderName ?? null,
           extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
           requestTimeout: result.data.requestTimeout ?? null,
@@ -194,7 +189,6 @@ export function ProviderDialog({
           model: result.data.model,
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
-          isDefault: result.data.isDefault,
           bifrostProviderName: result.data.bifrostProviderName ?? null,
           extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
           requestTimeout: result.data.requestTimeout ?? null,
@@ -283,14 +277,6 @@ export function ProviderDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </Field>
-
-            <Field orientation="horizontal">
-              <Switch
-                checked={isDefault}
-                onCheckedChange={setIsDefault}
-              />
-              <FieldLabel>Set as default Provider</FieldLabel>
             </Field>
 
             {/* Advanced Settings (Bifrost) */}

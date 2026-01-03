@@ -41,7 +41,6 @@ interface CreateProxyInput {
   username?: string;
   password?: string;
   description?: string;
-  isDefault?: boolean;
 }
 
 export function useCreateProxy() {
@@ -82,7 +81,6 @@ interface UpdateProxyInput {
   username?: string;
   password?: string;
   description?: string;
-  isDefault?: boolean;
 }
 
 export function useUpdateProxy() {

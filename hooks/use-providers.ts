@@ -40,7 +40,6 @@ interface CreateProviderInput {
   baseUrl: string;
   model: string;
   description?: string | null;
-  isDefault?: boolean;
   proxyId?: string | null;
   bifrostProviderName?: string | null;
   extraHeaders?: Record<string, string> | null;

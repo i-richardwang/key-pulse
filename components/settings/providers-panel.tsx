@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProviderDialog } from './provider-dialog';
 import { useProviders, useDeleteProviders, type ProviderWithDetails } from '@/hooks/use-providers';
-import { PlusIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, StarIcon } from 'lucide-react';
+import { PlusIcon, MoreHorizontalIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ProvidersPanel() {
@@ -85,20 +85,19 @@ export function ProvidersPanel() {
                 <TableHead>Model</TableHead>
                 <TableHead>Proxy</TableHead>
                 <TableHead className="text-center">Keys</TableHead>
-                <TableHead className="text-center">Default</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : providers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No providers yet. Click &quot;Add&quot; to create one or sync from Bifrost.
                   </TableCell>
                 </TableRow>
@@ -130,11 +129,6 @@ export function ProvidersPanel() {
                     </TableCell>
                     <TableCell className="text-center">
                       {provider.keyCount}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {provider.isDefault && (
-                        <StarIcon className="size-4 text-yellow-500 mx-auto fill-yellow-500" />
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

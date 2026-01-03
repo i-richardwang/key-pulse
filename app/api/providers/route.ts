@@ -14,7 +14,6 @@ export async function GET() {
         baseUrl: providers.baseUrl,
         model: providers.model,
         description: providers.description,
-        isDefault: providers.isDefault,
         proxyId: providers.proxyId,
         // Bifrost fields
         bifrostProviderName: providers.bifrostProviderName,
@@ -46,7 +45,7 @@ export async function GET() {
       .leftJoin(apiKeys, eq(providers.id, apiKeys.providerId))
       .leftJoin(proxies, eq(providers.proxyId, proxies.id))
       .groupBy(providers.id, proxies.id)
-      .orderBy(desc(providers.isDefault), desc(providers.createdAt));
+      .orderBy(desc(providers.createdAt));
 
     const transformed = result.map(row => ({
       ...row,
@@ -68,20 +67,12 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // If this is set as default, unset other defaults
-    if (data.isDefault) {
-      await db.update(providers)
-        .set({ isDefault: false })
-        .where(eq(providers.isDefault, true));
-    }
-
     const [inserted] = await db.insert(providers)
       .values({
         name: data.name,
         baseUrl: data.baseUrl,
         model: data.model,
         description: data.description,
-        isDefault: data.isDefault ?? false,
         proxyId: data.proxyId ?? null,
         // Bifrost fields
         bifrostProviderName: data.bifrostProviderName,
@@ -117,18 +108,10 @@ export async function PUT(request: NextRequest) {
     const parsed = await parseBody(request, providerUpdateSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { id, isDefault, ...data } = parsed.data;
-
-    // Handle default toggle (must run before update)
-    if (isDefault) {
-      await db.update(providers)
-        .set({ isDefault: false })
-        .where(eq(providers.isDefault, true));
-    }
+    const { id, ...data } = parsed.data;
 
     const updateData = stripUndefined({
       ...data,
-      isDefault,
       updatedAt: new Date(),
     });
 

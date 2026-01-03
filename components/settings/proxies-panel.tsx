@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProxyDialog } from './proxy-dialog';
 import { useProxies, useDeleteProxies, type ProxyWithCount } from '@/hooks/use-proxies';
-import { PlusIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, StarIcon, LockIcon } from 'lucide-react';
+import { PlusIcon, MoreHorizontalIcon, PencilIcon, TrashIcon, LockIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ProxiesPanel() {
@@ -85,20 +85,19 @@ export function ProxiesPanel() {
                 <TableHead>Address</TableHead>
                 <TableHead className="text-center">Auth</TableHead>
                 <TableHead className="text-center">Providers</TableHead>
-                <TableHead className="text-center">Default</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : proxies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No proxies yet. Click &quot;Add&quot; to create one.
                   </TableCell>
                 </TableRow>
@@ -126,11 +125,6 @@ export function ProxiesPanel() {
                     </TableCell>
                     <TableCell className="text-center">
                       {proxy.providerCount}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {proxy.isDefault && (
-                        <StarIcon className="size-4 text-yellow-500 mx-auto fill-yellow-500" />
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

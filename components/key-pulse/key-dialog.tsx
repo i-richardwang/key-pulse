@@ -54,7 +54,6 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
   const [isLoading, setIsLoading] = useState(false);
 
   const isEditing = !!editKey;
-  const defaultProvider = providers.find(p => p.isDefault);
 
   useEffect(() => {
     if (open) {
@@ -69,7 +68,7 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
         setShowAdvanced(!!editKey.name || !!editKey.models?.length);
       } else {
         setKey('');
-        setProviderId(defaultProvider?.id || providers[0]?.id || '');
+        setProviderId(providers[0]?.id || '');
         setName('');
         setModelsInput('');
         setWeight(1.0);
@@ -78,7 +77,7 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
         setShowAdvanced(false);
       }
     }
-  }, [open, editKey, providers, defaultProvider]);
+  }, [open, editKey, providers]);
 
   const selectedProvider = providers.find(p => p.id === providerId);
 

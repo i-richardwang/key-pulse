@@ -18,7 +18,6 @@ const proxyBaseFields = {
   username: optionalTrimmed(),
   password: z.string().optional().nullable(),
   description: optionalTrimmed(500),
-  isDefault: z.boolean().optional(),
 };
 
 // Proxy schemas
@@ -33,7 +32,6 @@ export const proxyUpdateSchema = z.object({
   username: optionalTrimmed(),
   password: z.string().optional().nullable(),
   description: optionalTrimmed(500),
-  isDefault: z.boolean().optional(),
 });
 
 export const proxyDeleteSchema = z.object({
@@ -64,7 +62,6 @@ export const providerSchema = z.object({
   baseUrl: trimmed(z.string().url({ error: 'Invalid URL format' })),
   model: trimmed(z.string().min(1, 'Model is required')),
   description: optionalTrimmed(500),
-  isDefault: z.boolean().optional(),
   proxyId: z.uuid().optional().nullable(),
   ...bifrostFields,
 });
@@ -75,7 +72,6 @@ export const providerUpdateSchema = z.object({
   baseUrl: trimmed(z.string().url()).optional(),
   model: trimmed(z.string().min(1)).optional(),
   description: optionalTrimmed(500),
-  isDefault: z.boolean().optional(),
   proxyId: z.uuid().optional().nullable(),
   ...bifrostFields,
 });

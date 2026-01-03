@@ -44,14 +44,12 @@ export function BatchAddDialog({ open, onOpenChange, onSave }: BatchAddDialogPro
   const parsedKeys = useMemo(() => parseKeys(rawKeys), [rawKeys]);
   const uniqueKeys = useMemo(() => [...new Set(parsedKeys)], [parsedKeys]);
 
-  const defaultProvider = providers.find(p => p.isDefault);
-
   useEffect(() => {
     if (open) {
       setRawKeys('');
-      setProviderId(defaultProvider?.id || providers[0]?.id || '');
+      setProviderId(providers[0]?.id || '');
     }
-  }, [open, providers, defaultProvider]);
+  }, [open, providers]);
 
   const selectedProvider = providers.find(p => p.id === providerId);
 

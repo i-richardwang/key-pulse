@@ -11,7 +11,6 @@ export const proxies = pgTable('proxies', {
   username: text('username'),
   password: text('password'),
   description: text('description'),
-  isDefault: boolean('is_default').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -23,8 +22,7 @@ export const providers = pgTable('providers', {
   baseUrl: text('base_url').notNull(),
   model: text('model').notNull(),
   description: text('description'),
-  isDefault: boolean('is_default').default(false),
-  proxyId: uuid('proxy_id').references(() => proxies.id),  // Provider-level proxy
+  proxyId: uuid('proxy_id').references(() => proxies.id),
 
   // Bifrost sync identifier
   bifrostProviderName: text('bifrost_provider_name').unique(),  // Links to Bifrost provider
