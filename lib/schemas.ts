@@ -1,26 +1,38 @@
 import { z } from 'zod';
 
-// Proxy schemas
-export const proxySchema = z.object({
-  name: z.string().min(1, { error: 'Name is required' }).max(100),
+// Helper: string with automatic trim
+const trimmed = (schema: z.ZodString = z.string()) => schema.transform(s => s.trim());
+
+// Helper: optional trimmed string that normalizes empty to null
+const optionalTrimmed = (maxLength?: number) => {
+  const base = maxLength ? z.string().max(maxLength) : z.string();
+  return base.optional().nullable().transform(s => s?.trim() || null);
+};
+
+// Shared proxy fields (excluding id)
+const proxyBaseFields = {
+  name: trimmed(z.string().min(1, 'Name is required').max(100)),
   type: z.enum(['http', 'socks5'], { error: 'Type must be http or socks5' }),
-  host: z.string().min(1, { error: 'Host is required' }),
+  host: trimmed(z.string().min(1, 'Host is required')),
   port: z.number().int().min(1).max(65535, { error: 'Port must be 1-65535' }),
-  username: z.string().optional().nullable(),
+  username: optionalTrimmed(),
   password: z.string().optional().nullable(),
-  description: z.string().max(500).optional().nullable(),
+  description: optionalTrimmed(500),
   isDefault: z.boolean().optional(),
-});
+};
+
+// Proxy schemas
+export const proxySchema = z.object(proxyBaseFields);
 
 export const proxyUpdateSchema = z.object({
   id: z.uuid({ error: 'Invalid proxy ID' }),
-  name: z.string().min(1).max(100).optional(),
+  name: trimmed(z.string().min(1).max(100)).optional(),
   type: z.enum(['http', 'socks5']).optional(),
-  host: z.string().min(1).optional(),
+  host: trimmed(z.string().min(1)).optional(),
   port: z.number().int().min(1).max(65535).optional(),
-  username: z.string().optional().nullable(),
+  username: optionalTrimmed(),
   password: z.string().optional().nullable(),
-  description: z.string().max(500).optional().nullable(),
+  description: optionalTrimmed(500),
   isDefault: z.boolean().optional(),
 });
 
@@ -28,16 +40,9 @@ export const proxyDeleteSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
 });
 
-// Provider schemas
-export const providerSchema = z.object({
-  name: z.string().min(1, { error: 'Name is required' }).max(100),
-  baseUrl: z.string().url({ error: 'Invalid URL format' }),
-  model: z.string().min(1, { error: 'Model is required' }),
-  description: z.string().max(500).optional().nullable(),
-  isDefault: z.boolean().optional(),
-  proxyId: z.uuid().optional().nullable(),
-  // Bifrost fields
-  bifrostProviderName: z.string().max(100).optional().nullable(),
+// Shared Bifrost fields for providers
+const bifrostFields = {
+  bifrostProviderName: optionalTrimmed(100),
   extraHeaders: z.record(z.string(), z.string()).optional().nullable(),
   requestTimeout: z.number().int().min(1).max(172800).optional().nullable(),
   maxRetries: z.number().int().min(0).max(10).optional().nullable(),
@@ -47,35 +52,32 @@ export const providerSchema = z.object({
   bufferSize: z.number().int().min(1).max(100000).optional().nullable(),
   sendBackRawRequest: z.boolean().optional().nullable(),
   sendBackRawResponse: z.boolean().optional().nullable(),
-  baseProviderType: z.string().max(50).optional().nullable(),
+  baseProviderType: optionalTrimmed(50),
   allowedRequests: z.record(z.string(), z.boolean()).optional().nullable(),
   requestPathOverrides: z.record(z.string(), z.string()).optional().nullable(),
   bifrostStatus: z.enum(['active', 'error', 'deleted']).optional().nullable(),
+};
+
+// Provider schemas
+export const providerSchema = z.object({
+  name: trimmed(z.string().min(1, 'Name is required').max(100)),
+  baseUrl: trimmed(z.string().url({ error: 'Invalid URL format' })),
+  model: trimmed(z.string().min(1, 'Model is required')),
+  description: optionalTrimmed(500),
+  isDefault: z.boolean().optional(),
+  proxyId: z.uuid().optional().nullable(),
+  ...bifrostFields,
 });
 
 export const providerUpdateSchema = z.object({
   id: z.uuid({ error: 'Invalid provider ID' }),
-  name: z.string().min(1).max(100).optional(),
-  baseUrl: z.string().url().optional(),
-  model: z.string().min(1).optional(),
-  description: z.string().max(500).optional().nullable(),
+  name: trimmed(z.string().min(1).max(100)).optional(),
+  baseUrl: trimmed(z.string().url()).optional(),
+  model: trimmed(z.string().min(1)).optional(),
+  description: optionalTrimmed(500),
   isDefault: z.boolean().optional(),
   proxyId: z.uuid().optional().nullable(),
-  // Bifrost fields
-  bifrostProviderName: z.string().max(100).optional().nullable(),
-  extraHeaders: z.record(z.string(), z.string()).optional().nullable(),
-  requestTimeout: z.number().int().min(1).max(172800).optional().nullable(),
-  maxRetries: z.number().int().min(0).max(10).optional().nullable(),
-  retryBackoffInitial: z.number().int().min(100).optional().nullable(),
-  retryBackoffMax: z.number().int().min(1000).optional().nullable(),
-  concurrency: z.number().int().min(1).max(100000).optional().nullable(),
-  bufferSize: z.number().int().min(1).max(100000).optional().nullable(),
-  sendBackRawRequest: z.boolean().optional().nullable(),
-  sendBackRawResponse: z.boolean().optional().nullable(),
-  baseProviderType: z.string().max(50).optional().nullable(),
-  allowedRequests: z.record(z.string(), z.boolean()).optional().nullable(),
-  requestPathOverrides: z.record(z.string(), z.string()).optional().nullable(),
-  bifrostStatus: z.enum(['active', 'error', 'deleted']).optional().nullable(),
+  ...bifrostFields,
 });
 
 export const providerDeleteSchema = z.object({
@@ -84,9 +86,9 @@ export const providerDeleteSchema = z.object({
 
 // API Key schemas
 export const keyAddSchema = z.object({
-  key: z.string().min(1, { error: 'API Key is required' }),
+  key: trimmed(z.string().min(1, 'API Key is required')),
   providerId: z.uuid({ error: 'Provider is required' }),
-  name: z.string().max(255).optional().nullable(),
+  name: optionalTrimmed(255),
   models: z.array(z.string()).optional().nullable(),
   weight: z.number().min(0.1).max(1.0).optional(),
   enabled: z.boolean().optional(),
@@ -101,7 +103,7 @@ export const keyBatchAddSchema = z.union([
 export const keyUpdateSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
   updates: z.object({
-    name: z.string().max(255).optional().nullable(),
+    name: optionalTrimmed(255),
     providerId: z.uuid().optional(),
     models: z.array(z.string()).optional().nullable(),
     weight: z.number().min(0.1).max(1.0).optional().nullable(),

@@ -77,15 +77,15 @@ export async function POST(request: NextRequest) {
 
     const [inserted] = await db.insert(providers)
       .values({
-        name: data.name.trim(),
-        baseUrl: data.baseUrl.trim(),
-        model: data.model.trim(),
-        description: data.description?.trim() || null,
-        isDefault: data.isDefault || false,
-        proxyId: data.proxyId || null,
+        name: data.name,
+        baseUrl: data.baseUrl,
+        model: data.model,
+        description: data.description,
+        isDefault: data.isDefault ?? false,
+        proxyId: data.proxyId ?? null,
         // Bifrost fields
-        bifrostProviderName: data.bifrostProviderName?.trim() || null,
-        extraHeaders: data.extraHeaders || null,
+        bifrostProviderName: data.bifrostProviderName,
+        extraHeaders: data.extraHeaders ?? null,
         requestTimeout: data.requestTimeout ?? 30,
         maxRetries: data.maxRetries ?? 0,
         retryBackoffInitial: data.retryBackoffInitial ?? 500,
@@ -94,10 +94,10 @@ export async function POST(request: NextRequest) {
         bufferSize: data.bufferSize ?? 5000,
         sendBackRawRequest: data.sendBackRawRequest ?? false,
         sendBackRawResponse: data.sendBackRawResponse ?? false,
-        baseProviderType: data.baseProviderType?.trim() || null,
-        allowedRequests: data.allowedRequests || null,
-        requestPathOverrides: data.requestPathOverrides || null,
-        bifrostStatus: data.bifrostStatus || null,
+        baseProviderType: data.baseProviderType,
+        allowedRequests: data.allowedRequests ?? null,
+        requestPathOverrides: data.requestPathOverrides ?? null,
+        bifrostStatus: data.bifrostStatus ?? null,
       })
       .returning();
 
@@ -124,16 +124,16 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    // Core fields
-    if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl.trim();
-    if (data.model !== undefined) updateData.model = data.model.trim();
-    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.proxyId !== undefined) updateData.proxyId = data.proxyId || null;
+    // Core fields (already trimmed by schema)
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl;
+    if (data.model !== undefined) updateData.model = data.model;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.proxyId !== undefined) updateData.proxyId = data.proxyId;
 
     // Bifrost fields
-    if (data.bifrostProviderName !== undefined) updateData.bifrostProviderName = data.bifrostProviderName?.trim() || null;
-    if (data.extraHeaders !== undefined) updateData.extraHeaders = data.extraHeaders || null;
+    if (data.bifrostProviderName !== undefined) updateData.bifrostProviderName = data.bifrostProviderName;
+    if (data.extraHeaders !== undefined) updateData.extraHeaders = data.extraHeaders;
     if (data.requestTimeout !== undefined) updateData.requestTimeout = data.requestTimeout;
     if (data.maxRetries !== undefined) updateData.maxRetries = data.maxRetries;
     if (data.retryBackoffInitial !== undefined) updateData.retryBackoffInitial = data.retryBackoffInitial;
@@ -142,10 +142,10 @@ export async function PUT(request: NextRequest) {
     if (data.bufferSize !== undefined) updateData.bufferSize = data.bufferSize;
     if (data.sendBackRawRequest !== undefined) updateData.sendBackRawRequest = data.sendBackRawRequest;
     if (data.sendBackRawResponse !== undefined) updateData.sendBackRawResponse = data.sendBackRawResponse;
-    if (data.baseProviderType !== undefined) updateData.baseProviderType = data.baseProviderType?.trim() || null;
-    if (data.allowedRequests !== undefined) updateData.allowedRequests = data.allowedRequests || null;
-    if (data.requestPathOverrides !== undefined) updateData.requestPathOverrides = data.requestPathOverrides || null;
-    if (data.bifrostStatus !== undefined) updateData.bifrostStatus = data.bifrostStatus || null;
+    if (data.baseProviderType !== undefined) updateData.baseProviderType = data.baseProviderType;
+    if (data.allowedRequests !== undefined) updateData.allowedRequests = data.allowedRequests;
+    if (data.requestPathOverrides !== undefined) updateData.requestPathOverrides = data.requestPathOverrides;
+    if (data.bifrostStatus !== undefined) updateData.bifrostStatus = data.bifrostStatus;
 
     // Handle default toggle
     if (isDefault !== undefined) {

@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
 
     const [inserted] = await db.insert(proxies)
       .values({
-        name: name.trim(),
+        name,
         type,
-        host: host.trim(),
+        host,
         port,
-        username: username?.trim() || null,
-        password: password || null,
-        description: description?.trim() || null,
-        isDefault: isDefault || false,
+        username,
+        password,
+        description,
+        isDefault: isDefault ?? false,
       })
       .returning();
 
@@ -86,13 +86,13 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    if (name !== undefined) updateData.name = name.trim();
+    if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type;
-    if (host !== undefined) updateData.host = host.trim();
+    if (host !== undefined) updateData.host = host;
     if (port !== undefined) updateData.port = port;
-    if (username !== undefined) updateData.username = username?.trim() || null;
-    if (password !== undefined) updateData.password = password || null;
-    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (username !== undefined) updateData.username = username;
+    if (password !== undefined) updateData.password = password;
+    if (description !== undefined) updateData.description = description;
 
     // Handle default toggle
     if (isDefault !== undefined) {

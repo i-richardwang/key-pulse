@@ -140,20 +140,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
     }
 
-    const insertData = keysToAdd.map(item => {
-      const plainKey = item.key.trim();
-      return {
-        key: encrypt(plainKey),
-        maskedKey: maskKey(plainKey),
-        providerId: item.providerId,
-        status: 'pending' as const,
-        name: item.name?.trim() || null,
-        models: item.models || null,
-        weight: item.weight ?? 1.0,
-        enabled: item.enabled ?? true,
-        useForBatchApi: item.useForBatchApi ?? false,
-      };
-    });
+    const insertData = keysToAdd.map(item => ({
+      key: encrypt(item.key),
+      maskedKey: maskKey(item.key),
+      providerId: item.providerId,
+      status: 'pending' as const,
+      name: item.name,
+      models: item.models ?? null,
+      weight: item.weight ?? 1.0,
+      enabled: item.enabled ?? true,
+      useForBatchApi: item.useForBatchApi ?? false,
+    }));
 
     const inserted = await db.insert(apiKeys).values(insertData).returning({
       id: apiKeys.id,

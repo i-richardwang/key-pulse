@@ -3,8 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { SSEEvent, ProxyInfo, ProviderInfo, KeyFilters } from '@/types';
 
-export type { ProxyInfo, ProviderInfo };
-
 export interface ApiKeyWithRelations {
   id: string;
   maskedKey: string;

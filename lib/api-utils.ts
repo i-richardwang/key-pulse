@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { z } from 'zod';
 
-// Parse and validate request body against a Zod schema
 export async function parseBody<T extends z.ZodSchema>(
   request: Request,
   schema: T

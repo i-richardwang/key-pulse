@@ -163,40 +163,32 @@ export interface ValidationTask {
   config: ValidationConfig;
 }
 
-// Validate multiple keys concurrently with semaphore-based concurrency control
+type ValidationResult = { index: number; task: ValidationTask; result: InternalValidationResult };
+
+/**
+ * Validates multiple keys with semaphore-based concurrency control.
+ * Yields results as soon as each validation completes, keeping concurrency slots filled.
+ */
 export async function* validateKeys(
   tasks: ValidationTask[],
-  concurrency: number = 5,
+  concurrency = 5,
   signal?: AbortSignal
-): AsyncGenerator<{ index: number; task: ValidationTask; result: InternalValidationResult }> {
-  const maxConcurrency = Math.max(1, Math.min(10, concurrency));
-  let currentIndex = 0;
-  const inProgress = new Map<number, Promise<{ index: number; task: ValidationTask; result: InternalValidationResult }>>();
+): AsyncGenerator<ValidationResult> {
+  const limit = Math.min(Math.max(1, concurrency), 10);
+  const pending = new Map<number, Promise<ValidationResult>>();
+  let next = 0;
 
-  const startTask = (index: number) => {
-    const task = tasks[index];
-    const promise = validateSingleKey(task.key, task.config, signal).then((result) => ({
-      index,
-      task,
-      result,
-    }));
-    inProgress.set(index, promise);
-    return promise;
+  const enqueue = (i: number) => {
+    const task = tasks[i];
+    pending.set(i, validateSingleKey(task.key, task.config, signal).then(result => ({ index: i, task, result })));
   };
 
-  while (currentIndex < tasks.length && currentIndex < maxConcurrency) {
-    startTask(currentIndex);
-    currentIndex++;
-  }
+  while (next < limit && next < tasks.length) enqueue(next++);
 
-  while (inProgress.size > 0) {
-    const completed = await Promise.race(inProgress.values());
-    inProgress.delete(completed.index);
-    yield completed;
-
-    if (currentIndex < tasks.length && !signal?.aborted) {
-      startTask(currentIndex);
-      currentIndex++;
-    }
+  while (pending.size > 0) {
+    const done = await Promise.race(pending.values());
+    pending.delete(done.index);
+    yield done;
+    if (next < tasks.length && !signal?.aborted) enqueue(next++);
   }
 }
