@@ -6,8 +6,8 @@ import {
   fetchBifrostModels,
   isBifrostConfigured,
   parseProxyUrl,
-  type BifrostProvider,
 } from '@/lib/bifrost-client';
+import type { BifrostProvider } from '@/types/bifrost';
 import { fetchBifrostKeys, isBifrostDbConfigured } from '@/lib/bifrost-db';
 import { maskKey } from '@/lib/key-utils';
 import { encrypt } from '@/lib/crypto';
@@ -107,11 +107,11 @@ export async function POST() {
       // Build provider data with all Bifrost fields
       const providerData = buildProviderData(provider, baseUrl, model, proxyId);
 
-      // Check if provider with same bifrostProviderName exists
+      // Check if provider with same name exists
       const [existingProvider] = await db
         .select({ id: providers.id })
         .from(providers)
-        .where(eq(providers.bifrostProviderName, provider.name))
+        .where(eq(providers.name, provider.name))
         .limit(1);
 
       let providerId: string;
@@ -131,37 +131,16 @@ export async function POST() {
         providerId = existingProvider.id;
         stats.updated++;
       } else {
-        // Check if provider with same name exists (legacy check)
-        const [legacyProvider] = await db
-          .select({ id: providers.id })
-          .from(providers)
-          .where(eq(providers.name, provider.name))
-          .limit(1);
+        // Insert new provider
+        const [inserted] = await db.insert(providers)
+          .values({
+            name: provider.name,
+            ...providerData,
+          })
+          .returning({ id: providers.id });
 
-        if (legacyProvider) {
-          // Update legacy provider and set bifrostProviderName
-          await db.update(providers)
-            .set({
-              ...providerData,
-              updatedAt: new Date(),
-            })
-            .where(eq(providers.id, legacyProvider.id));
-
-          await db.delete(apiKeys).where(eq(apiKeys.providerId, legacyProvider.id));
-          providerId = legacyProvider.id;
-          stats.updated++;
-        } else {
-          // Insert new provider
-          const [inserted] = await db.insert(providers)
-            .values({
-              name: provider.name,
-              ...providerData,
-            })
-            .returning({ id: providers.id });
-
-          providerId = inserted.id;
-          stats.providers++;
-        }
+        providerId = inserted.id;
+        stats.providers++;
       }
 
       // Insert keys for this provider
@@ -215,8 +194,7 @@ function buildProviderData(
     baseUrl,
     model,
     proxyId,
-    // Bifrost sync identifier
-    bifrostProviderName: provider.name,
+    // Bifrost status
     bifrostStatus: provider.status,
     // Network config
     extraHeaders: networkConfig?.extra_headers || null,

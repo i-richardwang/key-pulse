@@ -41,7 +41,6 @@ interface CreateProviderInput {
   model: string;
   description?: string | null;
   proxyId?: string | null;
-  bifrostProviderName?: string | null;
   extraHeaders?: Record<string, string> | null;
   requestTimeout?: number | null;
   maxRetries?: number | null;

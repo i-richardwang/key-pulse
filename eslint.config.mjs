@@ -13,6 +13,23 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Import restrictions: enforce type imports from @/types
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/*"],
+              importNamePattern: "^(Bifrost|.*Type|.*Interface|.*Config)$",
+              message: "Import types from '@/types' instead of '@/lib/*'.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

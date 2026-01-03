@@ -16,7 +16,6 @@ export async function GET() {
         description: providers.description,
         proxyId: providers.proxyId,
         // Bifrost fields
-        bifrostProviderName: providers.bifrostProviderName,
         extraHeaders: providers.extraHeaders,
         requestTimeout: providers.requestTimeout,
         maxRetries: providers.maxRetries,
@@ -75,7 +74,6 @@ export async function POST(request: NextRequest) {
         description: data.description,
         proxyId: data.proxyId ?? null,
         // Bifrost fields
-        bifrostProviderName: data.bifrostProviderName,
         extraHeaders: data.extraHeaders ?? null,
         requestTimeout: data.requestTimeout ?? 30,
         maxRetries: data.maxRetries ?? 0,

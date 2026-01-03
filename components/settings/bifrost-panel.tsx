@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { RefreshCwIcon, CheckCircle2Icon, XCircleIcon, AlertCircleIcon, Loader2Icon } from 'lucide-react';
+import { PushSyncDialog } from './push-sync-dialog';
+import { RefreshCwIcon, CheckCircle2Icon, XCircleIcon, AlertCircleIcon, Loader2Icon, UploadIcon } from 'lucide-react';
 
 interface SyncStatus {
   configured: boolean;
@@ -29,6 +30,7 @@ export function BifrostPanel() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pushDialogOpen, setPushDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchStatus();
@@ -181,6 +183,26 @@ BIFROST_DATABASE_URL=postgresql://...`}
         )}
       </Card>
 
+      {/* Push to Bifrost */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Push to Bifrost</CardTitle>
+          <CardDescription>
+            Push selected providers and keys to your Bifrost instance
+          </CardDescription>
+          <CardAction>
+            <Button
+              variant="outline"
+              onClick={() => setPushDialogOpen(true)}
+              disabled={!status?.apiUrl}
+            >
+              <UploadIcon data-icon="inline-start" />
+              Push
+            </Button>
+          </CardAction>
+        </CardHeader>
+      </Card>
+
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
@@ -189,6 +211,11 @@ BIFROST_DATABASE_URL=postgresql://...`}
         confirmText="Sync"
         variant="destructive"
         onConfirm={handleSync}
+      />
+
+      <PushSyncDialog
+        open={pushDialogOpen}
+        onOpenChange={setPushDialogOpen}
       />
     </div>
   );

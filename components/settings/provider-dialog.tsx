@@ -55,7 +55,6 @@ export function ProviderDialog({
   const [proxyId, setProxyId] = useState<string>('none');
 
   // Bifrost fields
-  const [bifrostProviderName, setBifrostProviderName] = useState('');
   const [extraHeadersJson, setExtraHeadersJson] = useState('');
   const [requestTimeout, setRequestTimeout] = useState(30);
   const [maxRetries, setMaxRetries] = useState(0);
@@ -86,7 +85,6 @@ export function ProviderDialog({
         setDescription(editProvider.description || '');
         setProxyId(editProvider.proxyId || 'none');
         // Bifrost fields
-        setBifrostProviderName(editProvider.bifrostProviderName || '');
         setExtraHeadersJson(editProvider.extraHeaders ? JSON.stringify(editProvider.extraHeaders, null, 2) : '');
         setRequestTimeout(editProvider.requestTimeout ?? 30);
         setMaxRetries(editProvider.maxRetries ?? 0);
@@ -98,14 +96,13 @@ export function ProviderDialog({
         setSendBackRawResponse(editProvider.sendBackRawResponse ?? false);
         setBaseProviderType(editProvider.baseProviderType || 'none');
         // Expand advanced if any bifrost field is set
-        setShowAdvanced(!!editProvider.bifrostProviderName || !!editProvider.extraHeaders);
+        setShowAdvanced(!!editProvider.extraHeaders);
       } else {
         setName('');
         setBaseUrl('');
         setModel('');
         setDescription('');
         setProxyId('none');
-        setBifrostProviderName('');
         setExtraHeadersJson('');
         setRequestTimeout(30);
         setMaxRetries(0);
@@ -142,7 +139,6 @@ export function ProviderDialog({
       model,
       description: description || undefined,
       proxyId: proxyId === 'none' ? undefined : proxyId,
-      bifrostProviderName: bifrostProviderName || undefined,
       extraHeaders,
       requestTimeout,
       maxRetries,
@@ -169,7 +165,6 @@ export function ProviderDialog({
           model: result.data.model,
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
-          bifrostProviderName: result.data.bifrostProviderName ?? null,
           extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
           requestTimeout: result.data.requestTimeout ?? null,
           maxRetries: result.data.maxRetries ?? null,
@@ -189,7 +184,6 @@ export function ProviderDialog({
           model: result.data.model,
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
-          bifrostProviderName: result.data.bifrostProviderName ?? null,
           extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
           requestTimeout: result.data.requestTimeout ?? null,
           maxRetries: result.data.maxRetries ?? null,
@@ -292,17 +286,6 @@ export function ProviderDialog({
 
               {showAdvanced && (
                 <div className="mt-4 space-y-4">
-                  <Field>
-                    <FieldLabel htmlFor="provider-bifrostName">Bifrost Provider Name</FieldLabel>
-                    <Input
-                      id="provider-bifrostName"
-                      placeholder="openai"
-                      value={bifrostProviderName}
-                      onChange={(e) => setBifrostProviderName(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Identifier for Bifrost sync</p>
-                  </Field>
-
                   <Field>
                     <FieldLabel htmlFor="provider-baseProviderType">Base Provider Type</FieldLabel>
                     <Select value={baseProviderType} onValueChange={setBaseProviderType}>

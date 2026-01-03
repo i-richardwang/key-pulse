@@ -24,9 +24,6 @@ export const providers = pgTable('providers', {
   description: text('description'),
   proxyId: uuid('proxy_id').references(() => proxies.id),
 
-  // Bifrost sync identifier
-  bifrostProviderName: text('bifrost_provider_name').unique(),  // Links to Bifrost provider
-
   // Bifrost: Network config
   extraHeaders: jsonb('extra_headers'),                    // Additional HTTP headers {"key": "value"}
   requestTimeout: integer('request_timeout').default(30), // Default request timeout in seconds

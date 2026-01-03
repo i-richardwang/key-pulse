@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { pgTable, serial, text, boolean, real } from 'drizzle-orm/pg-core';
 import { eq, and, isNotNull } from 'drizzle-orm';
 import { Pool } from 'pg';
+import type { BifrostKey } from '@/types/bifrost';
 
 // Bifrost config_keys table schema (read-only)
 const configKeys = pgTable('config_keys', {
@@ -10,22 +11,11 @@ const configKeys = pgTable('config_keys', {
   provider: text('provider').notNull(),
   keyId: text('key_id').notNull().unique(),
   value: text('value').notNull(),
-  modelsJson: text('models_json'),           // JSON string of models array
+  modelsJson: text('models_json'),
   weight: real('weight').default(1.0),
   enabled: boolean('enabled').default(true),
   useForBatchApi: boolean('use_for_batch_api').default(false),
 });
-
-export interface BifrostKey {
-  id: string;
-  name: string;
-  provider: string;
-  value: string;
-  models: string[] | null;
-  weight: number;
-  enabled: boolean;
-  useForBatchApi: boolean;
-}
 
 let db: ReturnType<typeof drizzle> | null = null;
 

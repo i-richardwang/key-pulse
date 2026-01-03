@@ -1,5 +1,8 @@
 import type { ApiKeyStatus } from '@/db/schema';
 
+// Re-export Bifrost types for convenience
+export * from './bifrost';
+
 // =============================================================================
 // Status Types
 // =============================================================================
@@ -32,7 +35,6 @@ export interface ProviderInfo {
   name: string;
   baseUrl: string;
   model: string;
-  bifrostProviderName?: string | null;
   extraHeaders?: Record<string, string> | null;
   requestTimeout?: number | null;
   maxRetries?: number | null;

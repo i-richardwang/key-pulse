@@ -40,7 +40,6 @@ export const proxyDeleteSchema = z.object({
 
 // Shared Bifrost fields for providers
 const bifrostFields = {
-  bifrostProviderName: optionalTrimmed(100),
   extraHeaders: z.record(z.string(), z.string()).optional().nullable(),
   requestTimeout: z.number().int().min(1).max(172800).optional().nullable(),
   maxRetries: z.number().int().min(0).max(10).optional().nullable(),
