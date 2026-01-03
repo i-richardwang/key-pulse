@@ -131,16 +131,25 @@ export function KeyPulseApp() {
   const handleAddKey = useCallback(async (data: {
     key?: string;
     providerId: string;
+    name?: string | null;
+    models?: string[] | null;
+    weight?: number | null;
+    enabled?: boolean | null;
+    useForBatchApi?: boolean | null;
   }) => {
     if (data.key) {
       try {
         const created = await addKeys([{
           key: data.key,
           providerId: data.providerId,
+          name: data.name,
+          models: data.models,
+          weight: data.weight ?? undefined,
+          enabled: data.enabled ?? undefined,
+          useForBatchApi: data.useForBatchApi ?? undefined,
         }]);
         toast.success('Added successfully');
         await refetch();
-        // Auto-validate the newly added key
         if (created && created.length > 0) {
           const newKeyIds = created.map((k: { id: string }) => k.id);
           handleValidate(newKeyIds);
@@ -153,13 +162,22 @@ export function KeyPulseApp() {
   }, [addKeys, refetch, handleValidate]);
 
   const handleEditKey = useCallback(async (data: {
-    key?: string;
     providerId: string;
+    name?: string | null;
+    models?: string[] | null;
+    weight?: number | null;
+    enabled?: boolean | null;
+    useForBatchApi?: boolean | null;
   }) => {
     if (editingKey) {
       try {
         await updateKeys([editingKey.id], {
           providerId: data.providerId,
+          name: data.name,
+          models: data.models,
+          weight: data.weight,
+          enabled: data.enabled,
+          useForBatchApi: data.useForBatchApi,
         });
         toast.success('Updated successfully');
         refetch();

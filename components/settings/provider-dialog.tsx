@@ -23,6 +23,7 @@ import { useCreateProvider, useUpdateProvider, type ProviderWithDetails } from '
 import { useProxies } from '@/hooks/use-proxies';
 import { providerSchema } from '@/lib/schemas';
 import { toast } from 'sonner';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface ProviderDialogProps {
   open: boolean;
@@ -31,18 +32,44 @@ interface ProviderDialogProps {
   onSuccess: () => void;
 }
 
+const BASE_PROVIDER_TYPES = [
+  { value: 'none', label: 'None (Standard)' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'cohere', label: 'Cohere' },
+  { value: 'gemini', label: 'Gemini' },
+  { value: 'bedrock', label: 'AWS Bedrock' },
+];
+
 export function ProviderDialog({
   open,
   onOpenChange,
   editProvider,
   onSuccess,
 }: ProviderDialogProps) {
+  // Core fields
   const [name, setName] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [model, setModel] = useState('');
   const [description, setDescription] = useState('');
   const [proxyId, setProxyId] = useState<string>('none');
   const [isDefault, setIsDefault] = useState(false);
+
+  // Bifrost fields
+  const [bifrostProviderName, setBifrostProviderName] = useState('');
+  const [extraHeadersJson, setExtraHeadersJson] = useState('');
+  const [requestTimeout, setRequestTimeout] = useState(30);
+  const [maxRetries, setMaxRetries] = useState(0);
+  const [retryBackoffInitial, setRetryBackoffInitial] = useState(500);
+  const [retryBackoffMax, setRetryBackoffMax] = useState(5000);
+  const [concurrency, setConcurrency] = useState(1000);
+  const [bufferSize, setBufferSize] = useState(5000);
+  const [sendBackRawRequest, setSendBackRawRequest] = useState(false);
+  const [sendBackRawResponse, setSendBackRawResponse] = useState(false);
+  const [baseProviderType, setBaseProviderType] = useState('none');
+
+  // Collapsible sections
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { createProvider, isLoading: isCreating } = useCreateProvider();
   const { updateProvider, isLoading: isUpdating } = useUpdateProvider();
@@ -60,6 +87,20 @@ export function ProviderDialog({
         setDescription(editProvider.description || '');
         setProxyId(editProvider.proxyId || 'none');
         setIsDefault(editProvider.isDefault || false);
+        // Bifrost fields
+        setBifrostProviderName(editProvider.bifrostProviderName || '');
+        setExtraHeadersJson(editProvider.extraHeaders ? JSON.stringify(editProvider.extraHeaders, null, 2) : '');
+        setRequestTimeout(editProvider.requestTimeout ?? 30);
+        setMaxRetries(editProvider.maxRetries ?? 0);
+        setRetryBackoffInitial(editProvider.retryBackoffInitial ?? 500);
+        setRetryBackoffMax(editProvider.retryBackoffMax ?? 5000);
+        setConcurrency(editProvider.concurrency ?? 1000);
+        setBufferSize(editProvider.bufferSize ?? 5000);
+        setSendBackRawRequest(editProvider.sendBackRawRequest ?? false);
+        setSendBackRawResponse(editProvider.sendBackRawResponse ?? false);
+        setBaseProviderType(editProvider.baseProviderType || 'none');
+        // Expand advanced if any bifrost field is set
+        setShowAdvanced(!!editProvider.bifrostProviderName || !!editProvider.extraHeaders);
       } else {
         setName('');
         setBaseUrl('');
@@ -67,12 +108,35 @@ export function ProviderDialog({
         setDescription('');
         setProxyId('none');
         setIsDefault(false);
+        setBifrostProviderName('');
+        setExtraHeadersJson('');
+        setRequestTimeout(30);
+        setMaxRetries(0);
+        setRetryBackoffInitial(500);
+        setRetryBackoffMax(5000);
+        setConcurrency(1000);
+        setBufferSize(5000);
+        setSendBackRawRequest(false);
+        setSendBackRawResponse(false);
+        setBaseProviderType('none');
+        setShowAdvanced(false);
       }
     }
   }, [open, editProvider]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Parse extra headers JSON
+    let extraHeaders: Record<string, string> | null = null;
+    if (extraHeadersJson.trim()) {
+      try {
+        extraHeaders = JSON.parse(extraHeadersJson);
+      } catch {
+        toast.error('Invalid JSON format for Extra Headers');
+        return;
+      }
+    }
 
     // Validate with Zod
     const result = providerSchema.safeParse({
@@ -82,6 +146,17 @@ export function ProviderDialog({
       description: description || undefined,
       proxyId: proxyId === 'none' ? undefined : proxyId,
       isDefault,
+      bifrostProviderName: bifrostProviderName || undefined,
+      extraHeaders,
+      requestTimeout,
+      maxRetries,
+      retryBackoffInitial,
+      retryBackoffMax,
+      concurrency,
+      bufferSize,
+      sendBackRawRequest,
+      sendBackRawResponse,
+      baseProviderType: baseProviderType === 'none' ? undefined : baseProviderType,
     });
 
     if (!result.success) {
@@ -99,6 +174,17 @@ export function ProviderDialog({
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
           isDefault: result.data.isDefault,
+          bifrostProviderName: result.data.bifrostProviderName ?? null,
+          extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
+          requestTimeout: result.data.requestTimeout ?? null,
+          maxRetries: result.data.maxRetries ?? null,
+          retryBackoffInitial: result.data.retryBackoffInitial ?? null,
+          retryBackoffMax: result.data.retryBackoffMax ?? null,
+          concurrency: result.data.concurrency ?? null,
+          bufferSize: result.data.bufferSize ?? null,
+          sendBackRawRequest: result.data.sendBackRawRequest ?? null,
+          sendBackRawResponse: result.data.sendBackRawResponse ?? null,
+          baseProviderType: result.data.baseProviderType ?? null,
         });
         toast.success('Provider updated');
       } else {
@@ -109,6 +195,17 @@ export function ProviderDialog({
           description: result.data.description ?? null,
           proxyId: result.data.proxyId ?? null,
           isDefault: result.data.isDefault,
+          bifrostProviderName: result.data.bifrostProviderName ?? null,
+          extraHeaders: (result.data.extraHeaders as Record<string, string>) ?? null,
+          requestTimeout: result.data.requestTimeout ?? null,
+          maxRetries: result.data.maxRetries ?? null,
+          retryBackoffInitial: result.data.retryBackoffInitial ?? null,
+          retryBackoffMax: result.data.retryBackoffMax ?? null,
+          concurrency: result.data.concurrency ?? null,
+          bufferSize: result.data.bufferSize ?? null,
+          sendBackRawRequest: result.data.sendBackRawRequest ?? null,
+          sendBackRawResponse: result.data.sendBackRawResponse ?? null,
+          baseProviderType: result.data.baseProviderType ?? null,
         });
         toast.success('Provider created');
       }
@@ -120,13 +217,14 @@ export function ProviderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <FieldGroup>
+            {/* Core Fields */}
             <Field>
               <FieldLabel htmlFor="provider-name">Name</FieldLabel>
               <Input
@@ -194,6 +292,155 @@ export function ProviderDialog({
               />
               <FieldLabel>Set as default Provider</FieldLabel>
             </Field>
+
+            {/* Advanced Settings (Bifrost) */}
+            <div className="border-t pt-4 mt-2">
+              <button
+                type="button"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                Advanced Settings (Bifrost)
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-4 space-y-4">
+                  <Field>
+                    <FieldLabel htmlFor="provider-bifrostName">Bifrost Provider Name</FieldLabel>
+                    <Input
+                      id="provider-bifrostName"
+                      placeholder="openai"
+                      value={bifrostProviderName}
+                      onChange={(e) => setBifrostProviderName(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Identifier for Bifrost sync</p>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="provider-baseProviderType">Base Provider Type</FieldLabel>
+                    <Select value={baseProviderType} onValueChange={setBaseProviderType}>
+                      <SelectTrigger id="provider-baseProviderType">
+                        <SelectValue placeholder="Select base type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BASE_PROVIDER_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">For custom providers</p>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="provider-extraHeaders">Extra Headers (JSON)</FieldLabel>
+                    <textarea
+                      id="provider-extraHeaders"
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
+                      placeholder='{"X-Custom-Header": "value"}'
+                      value={extraHeadersJson}
+                      onChange={(e) => setExtraHeadersJson(e.target.value)}
+                    />
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="provider-timeout">Timeout (s)</FieldLabel>
+                      <Input
+                        id="provider-timeout"
+                        type="number"
+                        min={1}
+                        max={172800}
+                        value={requestTimeout}
+                        onChange={(e) => setRequestTimeout(parseInt(e.target.value) || 30)}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="provider-retries">Max Retries</FieldLabel>
+                      <Input
+                        id="provider-retries"
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={maxRetries}
+                        onChange={(e) => setMaxRetries(parseInt(e.target.value) || 0)}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="provider-backoffInitial">Backoff Initial (ms)</FieldLabel>
+                      <Input
+                        id="provider-backoffInitial"
+                        type="number"
+                        min={100}
+                        value={retryBackoffInitial}
+                        onChange={(e) => setRetryBackoffInitial(parseInt(e.target.value) || 500)}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="provider-backoffMax">Backoff Max (ms)</FieldLabel>
+                      <Input
+                        id="provider-backoffMax"
+                        type="number"
+                        min={1000}
+                        value={retryBackoffMax}
+                        onChange={(e) => setRetryBackoffMax(parseInt(e.target.value) || 5000)}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="provider-concurrency">Concurrency</FieldLabel>
+                      <Input
+                        id="provider-concurrency"
+                        type="number"
+                        min={1}
+                        max={100000}
+                        value={concurrency}
+                        onChange={(e) => setConcurrency(parseInt(e.target.value) || 1000)}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="provider-bufferSize">Buffer Size</FieldLabel>
+                      <Input
+                        id="provider-bufferSize"
+                        type="number"
+                        min={1}
+                        max={100000}
+                        value={bufferSize}
+                        onChange={(e) => setBufferSize(parseInt(e.target.value) || 5000)}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="flex gap-6">
+                    <Field orientation="horizontal">
+                      <Switch
+                        checked={sendBackRawRequest}
+                        onCheckedChange={setSendBackRawRequest}
+                      />
+                      <FieldLabel>Raw Request</FieldLabel>
+                    </Field>
+
+                    <Field orientation="horizontal">
+                      <Switch
+                        checked={sendBackRawResponse}
+                        onCheckedChange={setSendBackRawResponse}
+                      />
+                      <FieldLabel>Raw Response</FieldLabel>
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </div>
           </FieldGroup>
 
           <DialogFooter className="mt-6">

@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db, providers, apiKeys, proxies } from '@/db';
 import { eq, and } from 'drizzle-orm';
-import { fetchBifrostProviders, fetchBifrostModels, isBifrostConfigured, parseProxyUrl } from '@/lib/bifrost-client';
+import {
+  fetchBifrostProviders,
+  fetchBifrostModels,
+  isBifrostConfigured,
+  parseProxyUrl,
+  type BifrostProvider,
+} from '@/lib/bifrost-client';
 import { fetchBifrostKeys, isBifrostDbConfigured } from '@/lib/bifrost-db';
 import { maskKey } from '@/lib/key-utils';
 import { encrypt } from '@/lib/crypto';
@@ -55,7 +61,7 @@ export async function POST() {
       let proxyId: string | null = null;
       const proxyConfig = provider.proxy_config;
 
-      if (proxyConfig && proxyConfig.type !== 'none' && proxyConfig.url) {
+      if (proxyConfig && proxyConfig.type !== 'none' && proxyConfig.type !== 'environment' && proxyConfig.url) {
         const parsed = parseProxyUrl(proxyConfig.url);
         if (parsed && (proxyConfig.type === 'http' || proxyConfig.type === 'socks5')) {
           // Check if proxy with same host + port + type exists
@@ -73,6 +79,14 @@ export async function POST() {
 
           if (existingProxy) {
             proxyId = existingProxy.id;
+            // Update proxy with new fields
+            await db.update(proxies)
+              .set({
+                username: proxyConfig.username || null,
+                password: proxyConfig.password || null,
+                updatedAt: new Date(),
+              })
+              .where(eq(proxies.id, existingProxy.id));
           } else {
             // Create new proxy
             const [newProxy] = await db.insert(proxies)
@@ -90,11 +104,14 @@ export async function POST() {
         }
       }
 
-      // Check if provider with same name exists
+      // Build provider data with all Bifrost fields
+      const providerData = buildProviderData(provider, baseUrl, model, proxyId);
+
+      // Check if provider with same bifrostProviderName exists
       const [existingProvider] = await db
         .select({ id: providers.id })
         .from(providers)
-        .where(eq(providers.name, provider.name))
+        .where(eq(providers.bifrostProviderName, provider.name))
         .limit(1);
 
       let providerId: string;
@@ -103,9 +120,7 @@ export async function POST() {
         // Update existing provider
         await db.update(providers)
           .set({
-            baseUrl,
-            model,
-            proxyId,
+            ...providerData,
             updatedAt: new Date(),
           })
           .where(eq(providers.id, existingProvider.id));
@@ -116,18 +131,37 @@ export async function POST() {
         providerId = existingProvider.id;
         stats.updated++;
       } else {
-        // Insert new provider
-        const [inserted] = await db.insert(providers)
-          .values({
-            name: provider.name,
-            baseUrl,
-            model,
-            proxyId,
-          })
-          .returning({ id: providers.id });
+        // Check if provider with same name exists (legacy check)
+        const [legacyProvider] = await db
+          .select({ id: providers.id })
+          .from(providers)
+          .where(eq(providers.name, provider.name))
+          .limit(1);
 
-        providerId = inserted.id;
-        stats.providers++;
+        if (legacyProvider) {
+          // Update legacy provider and set bifrostProviderName
+          await db.update(providers)
+            .set({
+              ...providerData,
+              updatedAt: new Date(),
+            })
+            .where(eq(providers.id, legacyProvider.id));
+
+          await db.delete(apiKeys).where(eq(apiKeys.providerId, legacyProvider.id));
+          providerId = legacyProvider.id;
+          stats.updated++;
+        } else {
+          // Insert new provider
+          const [inserted] = await db.insert(providers)
+            .values({
+              name: provider.name,
+              ...providerData,
+            })
+            .returning({ id: providers.id });
+
+          providerId = inserted.id;
+          stats.providers++;
+        }
       }
 
       // Insert keys for this provider
@@ -142,6 +176,11 @@ export async function POST() {
           bifrostKeyId: key.id,
           providerId,
           status: 'pending',
+          // Bifrost key fields
+          models: key.models,
+          weight: key.weight,
+          enabled: key.enabled,
+          useForBatchApi: key.useForBatchApi,
         });
         stats.keys++;
       }
@@ -159,4 +198,41 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// Helper function to build provider data from Bifrost provider
+function buildProviderData(
+  provider: BifrostProvider,
+  baseUrl: string,
+  model: string,
+  proxyId: string | null
+) {
+  const networkConfig = provider.network_config;
+  const concurrencyConfig = provider.concurrency_and_buffer_size;
+  const customConfig = provider.custom_provider_config;
+
+  return {
+    baseUrl,
+    model,
+    proxyId,
+    // Bifrost sync identifier
+    bifrostProviderName: provider.name,
+    bifrostStatus: provider.status,
+    // Network config
+    extraHeaders: networkConfig?.extra_headers || null,
+    requestTimeout: networkConfig?.default_request_timeout_in_seconds ?? 30,
+    maxRetries: networkConfig?.max_retries ?? 0,
+    retryBackoffInitial: networkConfig?.retry_backoff_initial ?? 500,
+    retryBackoffMax: networkConfig?.retry_backoff_max ?? 5000,
+    // Concurrency config
+    concurrency: concurrencyConfig?.concurrency ?? 1000,
+    bufferSize: concurrencyConfig?.buffer_size ?? 5000,
+    // Debug options
+    sendBackRawRequest: provider.send_back_raw_request ?? false,
+    sendBackRawResponse: provider.send_back_raw_response ?? false,
+    // Custom provider config
+    baseProviderType: customConfig?.base_provider_type || null,
+    allowedRequests: customConfig?.allowed_requests || null,
+    requestPathOverrides: customConfig?.request_path_overrides || null,
+  };
 }

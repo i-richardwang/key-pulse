@@ -45,11 +45,17 @@ export async function GET(request: NextRequest) {
       .select({
         id: apiKeys.id,
         maskedKey: apiKeys.maskedKey,
+        name: apiKeys.name,
         providerId: apiKeys.providerId,
         status: apiKeys.status,
         lastValidatedAt: apiKeys.lastValidatedAt,
         responseTime: apiKeys.responseTime,
         errorMessage: apiKeys.errorMessage,
+        // Bifrost key fields
+        models: apiKeys.models,
+        weight: apiKeys.weight,
+        enabled: apiKeys.enabled,
+        useForBatchApi: apiKeys.useForBatchApi,
         createdAt: apiKeys.createdAt,
         updatedAt: apiKeys.updatedAt,
         provider: {
@@ -77,11 +83,16 @@ export async function GET(request: NextRequest) {
     const transformedKeys = keys.map(row => ({
       id: row.id,
       maskedKey: row.maskedKey,
+      name: row.name,
       providerId: row.providerId,
       status: row.status,
       lastValidatedAt: row.lastValidatedAt,
       responseTime: row.responseTime,
       errorMessage: row.errorMessage,
+      models: row.models,
+      weight: row.weight,
+      enabled: row.enabled,
+      useForBatchApi: row.useForBatchApi,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       provider: row.provider?.id ? row.provider : null,
@@ -136,6 +147,11 @@ export async function POST(request: NextRequest) {
         maskedKey: maskKey(plainKey),
         providerId: item.providerId,
         status: 'pending' as const,
+        name: item.name?.trim() || null,
+        models: item.models || null,
+        weight: item.weight ?? 1.0,
+        enabled: item.enabled ?? true,
+        useForBatchApi: item.useForBatchApi ?? false,
       };
     });
 
@@ -154,18 +170,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/keys - Batch update keys (only providerId now)
+// PUT /api/keys - Update keys
 export async function PUT(request: NextRequest) {
   try {
     const parsed = await parseBody(request, keyUpdateSchema);
     if ('error' in parsed) return parsed.error;
 
     const { ids, updates } = parsed.data;
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
-
+    if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.providerId !== undefined) {
       const [provider] = await db
         .select({ id: providers.id })
@@ -177,6 +191,10 @@ export async function PUT(request: NextRequest) {
       }
       updateData.providerId = updates.providerId;
     }
+    if (updates.models !== undefined) updateData.models = updates.models;
+    if (updates.weight !== undefined) updateData.weight = updates.weight;
+    if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
+    if (updates.useForBatchApi !== undefined) updateData.useForBatchApi = updates.useForBatchApi;
 
     await db.update(apiKeys)
       .set(updateData)

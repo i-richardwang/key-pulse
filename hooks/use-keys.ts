@@ -8,11 +8,17 @@ export type { ProxyInfo, ProviderInfo };
 export interface ApiKeyWithRelations {
   id: string;
   maskedKey: string;
+  name: string | null;
   providerId: string;
   status: string;
   lastValidatedAt: string | null;
   responseTime: number | null;
   errorMessage: string | null;
+  // Bifrost fields
+  models: string[] | null;
+  weight: number | null;
+  enabled: boolean | null;
+  useForBatchApi: boolean | null;
   createdAt: string;
   updatedAt: string;
   provider: ProviderInfo | null;
@@ -108,6 +114,11 @@ export function useAddKeys() {
     keys: Array<{
       key: string;
       providerId: string;
+      name?: string | null;
+      models?: string[] | null;
+      weight?: number;
+      enabled?: boolean;
+      useForBatchApi?: boolean;
     }>
   ) => {
     setIsLoading(true);
@@ -146,7 +157,12 @@ export function useUpdateKeys() {
   const updateKeys = useCallback(async (
     ids: string[],
     updates: {
+      name?: string | null;
       providerId?: string;
+      models?: string[] | null;
+      weight?: number | null;
+      enabled?: boolean | null;
+      useForBatchApi?: boolean | null;
     }
   ) => {
     setIsLoading(true);
@@ -164,8 +180,7 @@ export function useUpdateKeys() {
         throw new Error(data.error || 'Failed to update keys');
       }
 
-      const result = await res.json();
-      return result.data;
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);

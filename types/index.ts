@@ -1,5 +1,13 @@
 // Database types
-export type { ApiKey, NewApiKey, ApiKeyStatus, Proxy } from '@/db/schema';
+export type {
+  ApiKey,
+  NewApiKey,
+  ApiKeyStatus,
+  Proxy,
+  Provider,
+  ProxyType,
+  BifrostStatus,
+} from '@/db/schema';
 
 // UI types (KeyStatus extends ApiKeyStatus with 'validating')
 import type { KeyStatus } from '@/lib/constants';
@@ -19,6 +27,15 @@ export interface ProviderInfo {
   name: string;
   baseUrl: string;
   model: string;
+  // Bifrost fields
+  bifrostProviderName?: string | null;
+  extraHeaders?: Record<string, string> | null;
+  requestTimeout?: number | null;
+  maxRetries?: number | null;
+  concurrency?: number | null;
+  bufferSize?: number | null;
+  baseProviderType?: string | null;
+  bifrostStatus?: string | null;
 }
 
 export interface ValidationResult {
@@ -32,7 +49,7 @@ export interface ValidationResult {
 }
 
 export interface ProxyConfig {
-  type: 'http' | 'socks5';
+  type: 'http' | 'socks5' | 'environment';
   host: string;
   port: number;
   auth?: {

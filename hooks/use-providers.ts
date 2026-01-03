@@ -56,6 +56,21 @@ export function useCreateProvider() {
     description?: string | null;
     isDefault?: boolean;
     proxyId?: string | null;
+    // Bifrost fields
+    bifrostProviderName?: string | null;
+    extraHeaders?: Record<string, string> | null;
+    requestTimeout?: number | null;
+    maxRetries?: number | null;
+    retryBackoffInitial?: number | null;
+    retryBackoffMax?: number | null;
+    concurrency?: number | null;
+    bufferSize?: number | null;
+    sendBackRawRequest?: boolean | null;
+    sendBackRawResponse?: boolean | null;
+    baseProviderType?: string | null;
+    allowedRequests?: Record<string, boolean> | null;
+    requestPathOverrides?: Record<string, string> | null;
+    bifrostStatus?: 'active' | 'error' | 'deleted' | null;
   }) => {
     setIsLoading(true);
     setError(null);
@@ -98,6 +113,21 @@ export function useUpdateProvider() {
     description?: string | null;
     isDefault?: boolean;
     proxyId?: string | null;
+    // Bifrost fields
+    bifrostProviderName?: string | null;
+    extraHeaders?: Record<string, string> | null;
+    requestTimeout?: number | null;
+    maxRetries?: number | null;
+    retryBackoffInitial?: number | null;
+    retryBackoffMax?: number | null;
+    concurrency?: number | null;
+    bufferSize?: number | null;
+    sendBackRawRequest?: boolean | null;
+    sendBackRawResponse?: boolean | null;
+    baseProviderType?: string | null;
+    allowedRequests?: Record<string, boolean> | null;
+    requestPathOverrides?: Record<string, string> | null;
+    bifrostStatus?: 'active' | 'error' | 'deleted' | null;
   }) => {
     setIsLoading(true);
     setError(null);

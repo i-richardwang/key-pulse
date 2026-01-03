@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useProviders } from '@/hooks/use-providers';
 import { keyAddSchema } from '@/lib/schemas';
 import { toast } from 'sonner';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { ApiKeyWithRelations } from '@/hooks/use-keys';
 
 interface KeyDialogProps {
@@ -30,6 +32,11 @@ interface KeyDialogProps {
   onSave: (data: {
     key?: string;
     providerId: string;
+    name?: string | null;
+    models?: string[] | null;
+    weight?: number | null;
+    enabled?: boolean | null;
+    useForBatchApi?: boolean | null;
   }) => Promise<void>;
 }
 
@@ -38,6 +45,12 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
 
   const [key, setKey] = useState('');
   const [providerId, setProviderId] = useState('');
+  const [name, setName] = useState('');
+  const [modelsInput, setModelsInput] = useState('');
+  const [weight, setWeight] = useState(1.0);
+  const [enabled, setEnabled] = useState(true);
+  const [useForBatchApi, setUseForBatchApi] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const isEditing = !!editKey;
@@ -48,9 +61,21 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
       if (editKey) {
         setKey('');
         setProviderId(editKey.providerId);
+        setName(editKey.name || '');
+        setModelsInput(editKey.models?.join(', ') || '');
+        setWeight(editKey.weight ?? 1.0);
+        setEnabled(editKey.enabled ?? true);
+        setUseForBatchApi(editKey.useForBatchApi ?? false);
+        setShowAdvanced(!!editKey.name || !!editKey.models?.length);
       } else {
         setKey('');
         setProviderId(defaultProvider?.id || providers[0]?.id || '');
+        setName('');
+        setModelsInput('');
+        setWeight(1.0);
+        setEnabled(true);
+        setUseForBatchApi(false);
+        setShowAdvanced(false);
       }
     }
   }, [open, editKey, providers, defaultProvider]);
@@ -71,13 +96,22 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
     setIsLoading(true);
 
     try {
+      const models = modelsInput.trim()
+        ? modelsInput.split(',').map(m => m.trim()).filter(Boolean)
+        : null;
+
       await onSave({
         key: isEditing ? undefined : key,
         providerId,
+        name: name.trim() || null,
+        models,
+        weight,
+        enabled,
+        useForBatchApi,
       });
       onOpenChange(false);
     } catch {
-      // Error handled by parent with toast
+      // Error handled by parent
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +119,7 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Key' : 'Add Key'}</DialogTitle>
         </DialogHeader>
@@ -150,6 +184,68 @@ export function KeyDialog({ open, onOpenChange, editKey, onSave }: KeyDialogProp
                 </div>
               </div>
             )}
+
+            {/* Bifrost Settings */}
+            <div className="border-t pt-4 mt-2">
+              <button
+                type="button"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                Bifrost Settings
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-4 space-y-4">
+                  <Field>
+                    <FieldLabel htmlFor="key-name">Name</FieldLabel>
+                    <Input
+                      id="key-name"
+                      placeholder="My API Key"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="key-models">Models</FieldLabel>
+                    <Input
+                      id="key-models"
+                      placeholder="gpt-4, gpt-3.5-turbo"
+                      value={modelsInput}
+                      onChange={(e) => setModelsInput(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Comma-separated</p>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="key-weight">Weight (0.1-1.0)</FieldLabel>
+                    <Input
+                      id="key-weight"
+                      type="number"
+                      min={0.1}
+                      max={1.0}
+                      step={0.1}
+                      value={weight}
+                      onChange={(e) => setWeight(parseFloat(e.target.value) || 1.0)}
+                    />
+                  </Field>
+
+                  <div className="flex gap-6">
+                    <Field orientation="horizontal">
+                      <Switch checked={enabled} onCheckedChange={setEnabled} />
+                      <FieldLabel>Enabled</FieldLabel>
+                    </Field>
+
+                    <Field orientation="horizontal">
+                      <Switch checked={useForBatchApi} onCheckedChange={setUseForBatchApi} />
+                      <FieldLabel>Batch API</FieldLabel>
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </div>
           </FieldGroup>
 
           <DialogFooter className="mt-6">

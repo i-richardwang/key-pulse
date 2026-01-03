@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { pgTable, serial, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, boolean, real, jsonb } from 'drizzle-orm/pg-core';
 import { eq, and, isNotNull } from 'drizzle-orm';
 import { Pool } from 'pg';
 
@@ -10,7 +10,10 @@ const configKeys = pgTable('config_keys', {
   provider: text('provider').notNull(),
   keyId: text('key_id').notNull().unique(),
   value: text('value').notNull(),
+  modelsJson: text('models_json'),           // JSON string of models array
+  weight: real('weight').default(1.0),
   enabled: boolean('enabled').default(true),
+  useForBatchApi: boolean('use_for_batch_api').default(false),
 });
 
 export interface BifrostKey {
@@ -18,6 +21,10 @@ export interface BifrostKey {
   name: string;
   provider: string;
   value: string;
+  models: string[] | null;
+  weight: number;
+  enabled: boolean;
+  useForBatchApi: boolean;
 }
 
 let db: ReturnType<typeof drizzle> | null = null;
@@ -44,6 +51,10 @@ export async function fetchBifrostKeys(): Promise<BifrostKey[]> {
       name: configKeys.name,
       provider: configKeys.provider,
       value: configKeys.value,
+      modelsJson: configKeys.modelsJson,
+      weight: configKeys.weight,
+      enabled: configKeys.enabled,
+      useForBatchApi: configKeys.useForBatchApi,
     })
     .from(configKeys)
     .where(and(
@@ -56,5 +67,9 @@ export async function fetchBifrostKeys(): Promise<BifrostKey[]> {
     name: row.name,
     provider: row.provider,
     value: row.value,
+    models: row.modelsJson ? JSON.parse(row.modelsJson) : null,
+    weight: row.weight ?? 1.0,
+    enabled: row.enabled ?? true,
+    useForBatchApi: row.useForBatchApi ?? false,
   }));
 }

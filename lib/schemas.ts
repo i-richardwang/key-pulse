@@ -36,6 +36,21 @@ export const providerSchema = z.object({
   description: z.string().max(500).optional().nullable(),
   isDefault: z.boolean().optional(),
   proxyId: z.uuid().optional().nullable(),
+  // Bifrost fields
+  bifrostProviderName: z.string().max(100).optional().nullable(),
+  extraHeaders: z.record(z.string(), z.string()).optional().nullable(),
+  requestTimeout: z.number().int().min(1).max(172800).optional().nullable(),
+  maxRetries: z.number().int().min(0).max(10).optional().nullable(),
+  retryBackoffInitial: z.number().int().min(100).optional().nullable(),
+  retryBackoffMax: z.number().int().min(1000).optional().nullable(),
+  concurrency: z.number().int().min(1).max(100000).optional().nullable(),
+  bufferSize: z.number().int().min(1).max(100000).optional().nullable(),
+  sendBackRawRequest: z.boolean().optional().nullable(),
+  sendBackRawResponse: z.boolean().optional().nullable(),
+  baseProviderType: z.string().max(50).optional().nullable(),
+  allowedRequests: z.record(z.string(), z.boolean()).optional().nullable(),
+  requestPathOverrides: z.record(z.string(), z.string()).optional().nullable(),
+  bifrostStatus: z.enum(['active', 'error', 'deleted']).optional().nullable(),
 });
 
 export const providerUpdateSchema = z.object({
@@ -46,6 +61,21 @@ export const providerUpdateSchema = z.object({
   description: z.string().max(500).optional().nullable(),
   isDefault: z.boolean().optional(),
   proxyId: z.uuid().optional().nullable(),
+  // Bifrost fields
+  bifrostProviderName: z.string().max(100).optional().nullable(),
+  extraHeaders: z.record(z.string(), z.string()).optional().nullable(),
+  requestTimeout: z.number().int().min(1).max(172800).optional().nullable(),
+  maxRetries: z.number().int().min(0).max(10).optional().nullable(),
+  retryBackoffInitial: z.number().int().min(100).optional().nullable(),
+  retryBackoffMax: z.number().int().min(1000).optional().nullable(),
+  concurrency: z.number().int().min(1).max(100000).optional().nullable(),
+  bufferSize: z.number().int().min(1).max(100000).optional().nullable(),
+  sendBackRawRequest: z.boolean().optional().nullable(),
+  sendBackRawResponse: z.boolean().optional().nullable(),
+  baseProviderType: z.string().max(50).optional().nullable(),
+  allowedRequests: z.record(z.string(), z.boolean()).optional().nullable(),
+  requestPathOverrides: z.record(z.string(), z.string()).optional().nullable(),
+  bifrostStatus: z.enum(['active', 'error', 'deleted']).optional().nullable(),
 });
 
 export const providerDeleteSchema = z.object({
@@ -56,6 +86,11 @@ export const providerDeleteSchema = z.object({
 export const keyAddSchema = z.object({
   key: z.string().min(1, { error: 'API Key is required' }),
   providerId: z.uuid({ error: 'Provider is required' }),
+  name: z.string().max(255).optional().nullable(),
+  models: z.array(z.string()).optional().nullable(),
+  weight: z.number().min(0.1).max(1.0).optional(),
+  enabled: z.boolean().optional(),
+  useForBatchApi: z.boolean().optional(),
 });
 
 export const keyBatchAddSchema = z.union([
@@ -66,7 +101,12 @@ export const keyBatchAddSchema = z.union([
 export const keyUpdateSchema = z.object({
   ids: z.array(z.uuid()).min(1, { error: 'At least one ID is required' }),
   updates: z.object({
+    name: z.string().max(255).optional().nullable(),
     providerId: z.uuid().optional(),
+    models: z.array(z.string()).optional().nullable(),
+    weight: z.number().min(0.1).max(1.0).optional().nullable(),
+    enabled: z.boolean().optional().nullable(),
+    useForBatchApi: z.boolean().optional().nullable(),
   }),
 });
 

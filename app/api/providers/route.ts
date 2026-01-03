@@ -16,6 +16,21 @@ export async function GET() {
         description: providers.description,
         isDefault: providers.isDefault,
         proxyId: providers.proxyId,
+        // Bifrost fields
+        bifrostProviderName: providers.bifrostProviderName,
+        extraHeaders: providers.extraHeaders,
+        requestTimeout: providers.requestTimeout,
+        maxRetries: providers.maxRetries,
+        retryBackoffInitial: providers.retryBackoffInitial,
+        retryBackoffMax: providers.retryBackoffMax,
+        concurrency: providers.concurrency,
+        bufferSize: providers.bufferSize,
+        sendBackRawRequest: providers.sendBackRawRequest,
+        sendBackRawResponse: providers.sendBackRawResponse,
+        baseProviderType: providers.baseProviderType,
+        allowedRequests: providers.allowedRequests,
+        requestPathOverrides: providers.requestPathOverrides,
+        bifrostStatus: providers.bifrostStatus,
         createdAt: providers.createdAt,
         updatedAt: providers.updatedAt,
         keyCount: sql<number>`count(${apiKeys.id})::int`,
@@ -51,10 +66,10 @@ export async function POST(request: NextRequest) {
     const parsed = await parseBody(request, providerSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { name, baseUrl, model, description, isDefault, proxyId } = parsed.data;
+    const data = parsed.data;
 
     // If this is set as default, unset other defaults
-    if (isDefault) {
+    if (data.isDefault) {
       await db.update(providers)
         .set({ isDefault: false })
         .where(eq(providers.isDefault, true));
@@ -62,12 +77,27 @@ export async function POST(request: NextRequest) {
 
     const [inserted] = await db.insert(providers)
       .values({
-        name: name.trim(),
-        baseUrl: baseUrl.trim(),
-        model: model.trim(),
-        description: description?.trim() || null,
-        isDefault: isDefault || false,
-        proxyId: proxyId || null,
+        name: data.name.trim(),
+        baseUrl: data.baseUrl.trim(),
+        model: data.model.trim(),
+        description: data.description?.trim() || null,
+        isDefault: data.isDefault || false,
+        proxyId: data.proxyId || null,
+        // Bifrost fields
+        bifrostProviderName: data.bifrostProviderName?.trim() || null,
+        extraHeaders: data.extraHeaders || null,
+        requestTimeout: data.requestTimeout ?? 30,
+        maxRetries: data.maxRetries ?? 0,
+        retryBackoffInitial: data.retryBackoffInitial ?? 500,
+        retryBackoffMax: data.retryBackoffMax ?? 5000,
+        concurrency: data.concurrency ?? 1000,
+        bufferSize: data.bufferSize ?? 5000,
+        sendBackRawRequest: data.sendBackRawRequest ?? false,
+        sendBackRawResponse: data.sendBackRawResponse ?? false,
+        baseProviderType: data.baseProviderType?.trim() || null,
+        allowedRequests: data.allowedRequests || null,
+        requestPathOverrides: data.requestPathOverrides || null,
+        bifrostStatus: data.bifrostStatus || null,
       })
       .returning();
 
@@ -87,18 +117,35 @@ export async function PUT(request: NextRequest) {
     const parsed = await parseBody(request, providerUpdateSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { id, name, baseUrl, model, description, isDefault, proxyId } = parsed.data;
+    const { id, isDefault, ...data } = parsed.data;
 
     // Build update data
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
-    if (name !== undefined) updateData.name = name.trim();
-    if (baseUrl !== undefined) updateData.baseUrl = baseUrl.trim();
-    if (model !== undefined) updateData.model = model.trim();
-    if (description !== undefined) updateData.description = description?.trim() || null;
-    if (proxyId !== undefined) updateData.proxyId = proxyId || null;
+    // Core fields
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl.trim();
+    if (data.model !== undefined) updateData.model = data.model.trim();
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
+    if (data.proxyId !== undefined) updateData.proxyId = data.proxyId || null;
+
+    // Bifrost fields
+    if (data.bifrostProviderName !== undefined) updateData.bifrostProviderName = data.bifrostProviderName?.trim() || null;
+    if (data.extraHeaders !== undefined) updateData.extraHeaders = data.extraHeaders || null;
+    if (data.requestTimeout !== undefined) updateData.requestTimeout = data.requestTimeout;
+    if (data.maxRetries !== undefined) updateData.maxRetries = data.maxRetries;
+    if (data.retryBackoffInitial !== undefined) updateData.retryBackoffInitial = data.retryBackoffInitial;
+    if (data.retryBackoffMax !== undefined) updateData.retryBackoffMax = data.retryBackoffMax;
+    if (data.concurrency !== undefined) updateData.concurrency = data.concurrency;
+    if (data.bufferSize !== undefined) updateData.bufferSize = data.bufferSize;
+    if (data.sendBackRawRequest !== undefined) updateData.sendBackRawRequest = data.sendBackRawRequest;
+    if (data.sendBackRawResponse !== undefined) updateData.sendBackRawResponse = data.sendBackRawResponse;
+    if (data.baseProviderType !== undefined) updateData.baseProviderType = data.baseProviderType?.trim() || null;
+    if (data.allowedRequests !== undefined) updateData.allowedRequests = data.allowedRequests || null;
+    if (data.requestPathOverrides !== undefined) updateData.requestPathOverrides = data.requestPathOverrides || null;
+    if (data.bifrostStatus !== undefined) updateData.bifrostStatus = data.bifrostStatus || null;
 
     // Handle default toggle
     if (isDefault !== undefined) {
