@@ -5,7 +5,7 @@ import { relations } from 'drizzle-orm';
 export const proxies = pgTable('proxies', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull().unique(),
-  type: text('type').notNull(),                    // 'http' | 'socks5' | 'environment'
+  type: text('type').notNull(),                    // 'http' | 'socks5'
   host: text('host').notNull(),
   port: integer('port').notNull(),
   username: text('username'),
@@ -109,5 +109,5 @@ export type NewProxy = typeof proxies.$inferInsert;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
 export type ApiKeyStatus = 'pending' | 'valid' | 'invalid' | 'rate_limited' | 'timeout' | 'error';
-export type ProxyType = 'http' | 'socks5' | 'environment';
+export type ProxyType = 'http' | 'socks5';
 export type BifrostStatus = 'active' | 'error' | 'deleted';

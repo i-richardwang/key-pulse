@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, proxies, providers } from '@/db';
 import { eq, inArray, sql, desc } from 'drizzle-orm';
-import { parseBody } from '@/lib/api-utils';
+import { parseBody, stripUndefined } from '@/lib/api-utils';
 import { proxySchema, proxyUpdateSchema, proxyDeleteSchema } from '@/lib/schemas';
 
 // GET /api/proxies - List all proxies
@@ -79,31 +79,20 @@ export async function PUT(request: NextRequest) {
     const parsed = await parseBody(request, proxyUpdateSchema);
     if ('error' in parsed) return parsed.error;
 
-    const { id, name, type, host, port, username, password, description, isDefault } = parsed.data;
+    const { id, isDefault, ...data } = parsed.data;
 
-    // Build update data
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
-
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type;
-    if (host !== undefined) updateData.host = host;
-    if (port !== undefined) updateData.port = port;
-    if (username !== undefined) updateData.username = username;
-    if (password !== undefined) updateData.password = password;
-    if (description !== undefined) updateData.description = description;
-
-    // Handle default toggle
-    if (isDefault !== undefined) {
-      if (isDefault) {
-        // Unset other defaults
-        await db.update(proxies)
-          .set({ isDefault: false })
-          .where(eq(proxies.isDefault, true));
-      }
-      updateData.isDefault = isDefault;
+    // Handle default toggle (must run before update)
+    if (isDefault) {
+      await db.update(proxies)
+        .set({ isDefault: false })
+        .where(eq(proxies.isDefault, true));
     }
+
+    const updateData = stripUndefined({
+      ...data,
+      isDefault,
+      updatedAt: new Date(),
+    });
 
     const [updated] = await db.update(proxies)
       .set(updateData)

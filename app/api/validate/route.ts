@@ -4,8 +4,8 @@ import { eq, inArray, and, like, SQL } from 'drizzle-orm';
 import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import { decrypt } from '@/lib/crypto';
-import type { SSEEvent, ValidationSummary, ValidationConfig } from '@/types';
-import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
+import type { SSEEvent, ValidationSummary, ValidationConfig, KeyStatus } from '@/types';
+import { STATUS_CONFIG } from '@/lib/constants';
 import type { ApiKeyStatus } from '@/db/schema';
 
 const DEFAULT_CONCURRENCY = 5;

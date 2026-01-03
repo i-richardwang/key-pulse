@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, providers, apiKeys, proxies } from '@/db';
 import { eq, sql, desc, inArray } from 'drizzle-orm';
-import { parseBody } from '@/lib/api-utils';
+import { parseBody, stripUndefined } from '@/lib/api-utils';
 import { providerSchema, providerUpdateSchema, providerDeleteSchema } from '@/lib/schemas';
 
 // GET /api/providers - List all providers with proxy info
@@ -119,43 +119,18 @@ export async function PUT(request: NextRequest) {
 
     const { id, isDefault, ...data } = parsed.data;
 
-    // Build update data
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
-
-    // Core fields (already trimmed by schema)
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl;
-    if (data.model !== undefined) updateData.model = data.model;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.proxyId !== undefined) updateData.proxyId = data.proxyId;
-
-    // Bifrost fields
-    if (data.bifrostProviderName !== undefined) updateData.bifrostProviderName = data.bifrostProviderName;
-    if (data.extraHeaders !== undefined) updateData.extraHeaders = data.extraHeaders;
-    if (data.requestTimeout !== undefined) updateData.requestTimeout = data.requestTimeout;
-    if (data.maxRetries !== undefined) updateData.maxRetries = data.maxRetries;
-    if (data.retryBackoffInitial !== undefined) updateData.retryBackoffInitial = data.retryBackoffInitial;
-    if (data.retryBackoffMax !== undefined) updateData.retryBackoffMax = data.retryBackoffMax;
-    if (data.concurrency !== undefined) updateData.concurrency = data.concurrency;
-    if (data.bufferSize !== undefined) updateData.bufferSize = data.bufferSize;
-    if (data.sendBackRawRequest !== undefined) updateData.sendBackRawRequest = data.sendBackRawRequest;
-    if (data.sendBackRawResponse !== undefined) updateData.sendBackRawResponse = data.sendBackRawResponse;
-    if (data.baseProviderType !== undefined) updateData.baseProviderType = data.baseProviderType;
-    if (data.allowedRequests !== undefined) updateData.allowedRequests = data.allowedRequests;
-    if (data.requestPathOverrides !== undefined) updateData.requestPathOverrides = data.requestPathOverrides;
-    if (data.bifrostStatus !== undefined) updateData.bifrostStatus = data.bifrostStatus;
-
-    // Handle default toggle
-    if (isDefault !== undefined) {
-      if (isDefault) {
-        await db.update(providers)
-          .set({ isDefault: false })
-          .where(eq(providers.isDefault, true));
-      }
-      updateData.isDefault = isDefault;
+    // Handle default toggle (must run before update)
+    if (isDefault) {
+      await db.update(providers)
+        .set({ isDefault: false })
+        .where(eq(providers.isDefault, true));
     }
+
+    const updateData = stripUndefined({
+      ...data,
+      isDefault,
+      updatedAt: new Date(),
+    });
 
     const [updated] = await db.update(providers)
       .set(updateData)

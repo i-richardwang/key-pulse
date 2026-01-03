@@ -1,19 +1,24 @@
-// Database types
-export type {
-  ApiKey,
-  NewApiKey,
-  ApiKeyStatus,
-  Proxy,
-  Provider,
-  ProxyType,
-  BifrostStatus,
-} from '@/db/schema';
+import type { ApiKeyStatus } from '@/db/schema';
 
-// UI types (KeyStatus extends ApiKeyStatus with 'validating')
-import type { KeyStatus } from '@/lib/constants';
-export type { KeyStatus };
+// =============================================================================
+// Status Types
+// =============================================================================
 
-// Shared API response types
+// KeyStatus extends ApiKeyStatus with UI-only 'validating' state
+// - ApiKeyStatus: Database-persisted states (6 values)
+// - KeyStatus: UI states including transient 'validating' (7 values)
+export type KeyStatus = ApiKeyStatus | 'validating';
+
+export interface StatusConfig {
+  label: string;
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  className?: string;
+}
+
+// =============================================================================
+// API Response Types (lightweight versions for client)
+// =============================================================================
+
 export interface ProxyInfo {
   id: string;
   name: string;
@@ -27,7 +32,6 @@ export interface ProviderInfo {
   name: string;
   baseUrl: string;
   model: string;
-  // Bifrost fields
   bifrostProviderName?: string | null;
   extraHeaders?: Record<string, string> | null;
   requestTimeout?: number | null;
@@ -38,18 +42,12 @@ export interface ProviderInfo {
   bifrostStatus?: string | null;
 }
 
-export interface ValidationResult {
-  maskedKey: string;
-  status: KeyStatus;
-  responseTime?: number;
-  errorCode?: string;
-  errorMessage?: string;
-  timestamp: number;
-  keyId?: string;
-}
+// =============================================================================
+// Validation Types
+// =============================================================================
 
 export interface ProxyConfig {
-  type: 'http' | 'socks5' | 'environment';
+  type: 'http' | 'socks5';
   host: string;
   port: number;
   auth?: {
@@ -66,6 +64,16 @@ export interface ValidationConfig {
   proxy: ProxyConfig | null;
 }
 
+export interface ValidationResult {
+  maskedKey: string;
+  status: KeyStatus;
+  responseTime?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  timestamp: number;
+  keyId?: string;
+}
+
 export interface ValidationSummary {
   total: number;
   valid: number;
@@ -76,13 +84,20 @@ export interface ValidationSummary {
   duration: number;
 }
 
-// SSE event types (union only, individual types not exported)
+// =============================================================================
+// SSE Event Types
+// =============================================================================
+
 export type SSEEvent =
   | { type: 'start'; total: number }
   | { type: 'progress'; index: number; result: ValidationResult }
   | { type: 'complete'; summary: ValidationSummary }
   | { type: 'error'; message: string }
   | { type: 'log'; level: 'info' | 'warn' | 'error'; message: string; timestamp: number };
+
+// =============================================================================
+// Filter & Export Types
+// =============================================================================
 
 export interface KeyFilters {
   status?: string;

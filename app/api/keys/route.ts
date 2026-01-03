@@ -3,7 +3,7 @@ import { db, apiKeys, providers, proxies } from '@/db';
 import { eq, inArray, like, desc, asc, sql, and, SQL } from 'drizzle-orm';
 import { maskKey } from '@/lib/key-utils';
 import { encrypt } from '@/lib/crypto';
-import { parseBody } from '@/lib/api-utils';
+import { parseBody, stripUndefined } from '@/lib/api-utils';
 import { keyBatchAddSchema, keyUpdateSchema, keyDeleteSchema } from '@/lib/schemas';
 import type { ApiKeyStatus } from '@/db/schema';
 
@@ -174,9 +174,8 @@ export async function PUT(request: NextRequest) {
     if ('error' in parsed) return parsed.error;
 
     const { ids, updates } = parsed.data;
-    const updateData: Record<string, unknown> = { updatedAt: new Date() };
 
-    if (updates.name !== undefined) updateData.name = updates.name;
+    // Validate providerId if specified
     if (updates.providerId !== undefined) {
       const [provider] = await db
         .select({ id: providers.id })
@@ -186,12 +185,12 @@ export async function PUT(request: NextRequest) {
       if (!provider) {
         return NextResponse.json({ error: 'Invalid providerId' }, { status: 400 });
       }
-      updateData.providerId = updates.providerId;
     }
-    if (updates.models !== undefined) updateData.models = updates.models;
-    if (updates.weight !== undefined) updateData.weight = updates.weight;
-    if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
-    if (updates.useForBatchApi !== undefined) updateData.useForBatchApi = updates.useForBatchApi;
+
+    const updateData = stripUndefined({
+      ...updates,
+      updatedAt: new Date(),
+    });
 
     await db.update(apiKeys)
       .set(updateData)

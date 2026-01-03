@@ -25,7 +25,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react';
-import { STATUS_CONFIG, type KeyStatus } from '@/lib/constants';
+import { STATUS_CONFIG } from '@/lib/constants';
+import type { KeyStatus } from '@/types';
 import type { ApiKeyWithRelations } from '@/hooks/use-keys';
 
 interface KeysTableProps {
