@@ -4,7 +4,7 @@ import { eq, inArray, and, like, SQL } from 'drizzle-orm';
 import { validateKeys, type ValidationTask } from '@/lib/api-validator';
 import { validateRequestSchema } from '@/lib/schemas';
 import { decrypt } from '@/lib/crypto';
-import type { SSEEvent, ValidationSummary, ValidationConfig, KeyStatus } from '@/types';
+import type { SSEEvent, ValidationSummary, ValidationConfig, KeyStatus, ProviderType } from '@/types';
 import { STATUS_CONFIG } from '@/lib/constants';
 import type { ApiKeyStatus } from '@/db/schema';
 
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         providerId: apiKeys.providerId,
         providerBaseUrl: providers.baseUrl,
         providerModel: providers.model,
+        baseProviderType: providers.baseProviderType,
         proxyType: proxies.type,
         proxyHost: proxies.host,
         proxyPort: proxies.port,
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
             password: keyRecord.proxyPassword || '',
           } : undefined,
         } : null,
+        providerType: (keyRecord.baseProviderType as ProviderType) || 'openai',
       };
 
       validTasks.push({

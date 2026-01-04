@@ -1,6 +1,6 @@
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import type { ValidationConfig, ProxyConfig, KeyStatus } from '@/types';
+import type { ValidationConfig, ProxyConfig, KeyStatus, ProviderType } from '@/types';
 import { maskKey } from './key-utils';
 
 // Internal validation result (includes plaintext key for server-side use)
@@ -56,7 +56,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
   }
 }
 
-async function validateSingleKey(
+async function validateOpenAIKey(
   key: string,
   config: ValidationConfig,
   signal?: AbortSignal
@@ -154,6 +154,120 @@ async function validateSingleKey(
       timestamp: Date.now(),
     };
   }
+}
+
+async function validateAnthropicKey(
+  key: string,
+  config: ValidationConfig,
+  signal?: AbortSignal
+): Promise<InternalValidationResult> {
+  const startTime = Date.now();
+  const maskedKey = maskKey(key);
+
+  try {
+    const agent = createProxyAgent(config.proxy);
+    const baseUrl = config.baseUrl.replace(/\/$/, '');
+    const url = `${baseUrl}/v1/messages`;
+
+    const requestBody = {
+      model: config.model,
+      messages: [{ role: 'user', content: 'Hi' }],
+      max_tokens: 20,
+    };
+
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), config.timeout);
+
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, timeoutController.signal])
+      : timeoutController.signal;
+
+    const fetchOptions: RequestInit & { agent?: unknown } = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(requestBody),
+      signal: combinedSignal,
+    };
+
+    if (agent) {
+      fetchOptions.agent = agent;
+    }
+
+    const response = await fetch(url, fetchOptions);
+    clearTimeout(timeoutId);
+
+    const responseTime = Date.now() - startTime;
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        key,
+        maskedKey,
+        status: 'valid',
+        responseTime,
+        timestamp: Date.now(),
+        rawResponse: data,
+      };
+    }
+
+    const errorMessage = await extractErrorMessage(response);
+    const status = classifyError(null, response.status);
+
+    return {
+      key,
+      maskedKey,
+      status,
+      responseTime,
+      errorCode: String(response.status),
+      errorMessage,
+      timestamp: Date.now(),
+    };
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    const status = classifyError(error);
+
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        const isTimeout = responseTime >= config.timeout - 100;
+        return {
+          key,
+          maskedKey,
+          status: isTimeout ? 'timeout' : 'error',
+          responseTime,
+          errorMessage: isTimeout ? 'Request timeout' : 'Request cancelled',
+          timestamp: Date.now(),
+        };
+      }
+      errorMessage = error.message;
+    }
+
+    return {
+      key,
+      maskedKey,
+      status,
+      responseTime,
+      errorMessage,
+      timestamp: Date.now(),
+    };
+  }
+}
+
+async function validateSingleKey(
+  key: string,
+  config: ValidationConfig,
+  signal?: AbortSignal
+): Promise<InternalValidationResult> {
+  const providerType: ProviderType = config.providerType || 'openai';
+
+  if (providerType === 'anthropic') {
+    return validateAnthropicKey(key, config, signal);
+  }
+  return validateOpenAIKey(key, config, signal);
 }
 
 export interface ValidationTask {

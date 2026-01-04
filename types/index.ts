@@ -48,6 +48,8 @@ export interface ProviderInfo {
 // Validation Types
 // =============================================================================
 
+export type ProviderType = 'openai' | 'anthropic';
+
 export interface ProxyConfig {
   type: 'http' | 'socks5';
   host: string;
@@ -64,6 +66,7 @@ export interface ValidationConfig {
   timeout: number;
   concurrency: number;
   proxy: ProxyConfig | null;
+  providerType?: ProviderType;
 }
 
 export interface ValidationResult {
