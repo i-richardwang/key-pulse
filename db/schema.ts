@@ -74,6 +74,30 @@ export const apiKeys = pgTable('api_keys', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Schedules table - stores scheduled validation tasks
+export const schedules = pgTable('schedules', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  cron: text('cron').notNull(),                    // Cron expression, e.g., "0 3 * * *"
+  providerId: uuid('provider_id').references(() => providers.id, { onDelete: 'set null' }),  // null = all providers
+  enabled: boolean('enabled').notNull().default(true),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  nextRunAt: timestamp('next_run_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Schedule logs table - stores execution history
+export const scheduleLogs = pgTable('schedule_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  scheduleId: uuid('schedule_id').notNull().references(() => schedules.id, { onDelete: 'cascade' }),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  status: text('status').notNull().default('running'),  // 'running' | 'completed' | 'failed'
+  summary: jsonb('summary'),                             // ValidationSummary
+  error: text('error'),
+});
+
 // Relations
 export const proxiesRelations = relations(proxies, ({ many }) => ({
   providers: many(providers),
@@ -94,6 +118,21 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   }),
 }));
 
+export const schedulesRelations = relations(schedules, ({ one, many }) => ({
+  provider: one(providers, {
+    fields: [schedules.providerId],
+    references: [providers.id],
+  }),
+  logs: many(scheduleLogs),
+}));
+
+export const scheduleLogsRelations = relations(scheduleLogs, ({ one }) => ({
+  schedule: one(schedules, {
+    fields: [scheduleLogs.scheduleId],
+    references: [schedules.id],
+  }),
+}));
+
 // Type exports
 export type Provider = typeof providers.$inferSelect;
 export type NewProvider = typeof providers.$inferInsert;
@@ -106,3 +145,10 @@ export type NewApiKey = typeof apiKeys.$inferInsert;
 export type ApiKeyStatus = 'pending' | 'valid' | 'invalid' | 'rate_limited' | 'timeout' | 'error';
 export type ProxyType = 'http' | 'socks5';
 export type BifrostStatus = 'active' | 'error' | 'deleted';
+
+export type Schedule = typeof schedules.$inferSelect;
+export type NewSchedule = typeof schedules.$inferInsert;
+
+export type ScheduleLog = typeof scheduleLogs.$inferSelect;
+export type NewScheduleLog = typeof scheduleLogs.$inferInsert;
+export type ScheduleLogStatus = 'running' | 'completed' | 'failed';

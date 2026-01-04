@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProvidersPanel } from '@/components/settings/providers-panel';
 import { ProxiesPanel } from '@/components/settings/proxies-panel';
+import { SchedulesPanel } from '@/components/settings/schedules-panel';
 import { BifrostPanel } from '@/components/settings/bifrost-panel';
 import { SiteLayout } from '@/components/layout';
-import { ServerIcon, GlobeIcon, RefreshCwIcon } from 'lucide-react';
+import { ServerIcon, GlobeIcon, ClockIcon, RefreshCwIcon } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -29,6 +30,10 @@ export default function SettingsPage() {
             <GlobeIcon className="size-3.5" />
             Proxies
           </TabsTrigger>
+          <TabsTrigger value="schedules" className="gap-1.5">
+            <ClockIcon className="size-3.5" />
+            Schedules
+          </TabsTrigger>
           <TabsTrigger value="bifrost" className="gap-1.5">
             <RefreshCwIcon className="size-3.5" />
             Bifrost
@@ -41,6 +46,10 @@ export default function SettingsPage() {
 
         <TabsContent value="proxies" className="mt-4">
           <ProxiesPanel />
+        </TabsContent>
+
+        <TabsContent value="schedules" className="mt-4">
+          <SchedulesPanel />
         </TabsContent>
 
         <TabsContent value="bifrost" className="mt-4">

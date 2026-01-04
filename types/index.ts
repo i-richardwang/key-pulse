@@ -1,4 +1,7 @@
-import type { ApiKeyStatus } from '@/db/schema';
+import type { ApiKeyStatus, ScheduleLogStatus } from '@/db/schema';
+
+// Re-export types from schema
+export type { ScheduleLogStatus } from '@/db/schema';
 
 // Re-export Bifrost types for convenience
 export * from './bifrost';
@@ -115,4 +118,32 @@ export interface ExportOptions {
   content: 'all' | 'valid' | 'invalid';
   includeDetails: boolean;
   filters?: KeyFilters;
+}
+
+// =============================================================================
+// Schedule Types
+// =============================================================================
+
+export interface ScheduleInfo {
+  id: string;
+  name: string;
+  cron: string;
+  providerId: string | null;
+  providerName?: string | null;
+  enabled: boolean;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduleLogInfo {
+  id: string;
+  scheduleId: string;
+  scheduleName?: string;
+  startedAt: string;
+  finishedAt: string | null;
+  status: ScheduleLogStatus;
+  summary: ValidationSummary | null;
+  error: string | null;
 }
